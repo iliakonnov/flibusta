@@ -78,7 +78,7 @@ def getBook(fileName, zipPath):
             }
 
             publishInfo = {
-                'bookName': publishInfoElems['bookName'].text if pubInfoElems['bookName'] is not None else None,
+                'bookName': pubInfoElems['bookName'].text if pubInfoElems['bookName'] is not None else None,
                 'publisher': pubInfoElems['publisher'].text if pubInfoElems['publisher'] is not None else None,
                 'city': pubInfoElems['city'].text if pubInfoElems['city'] is not None else None,
                 'year': pubInfoElems['year'].text if pubInfoElems['year'] is not None else None,
