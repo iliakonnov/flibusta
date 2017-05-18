@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3.6
 # -*- coding: utf8 -*-
 import time
 import datetime
@@ -130,21 +130,23 @@ def doneDb(conn: sqlite3.Connection):
         --CREATE INDEX series_name_idx ON series(name);
         CREATE INDEX books_serie_idx ON books(serie_id);
         CREATE INDEX books_title_idx ON books(title);
-        CREATE VIRTUAL TABLE series_fts USING fts3(name TEXT);
+        CREATE VIRTUAL TABLE series_fts USING fts4(name, tokenize=unicode61);
         INSERT INTO series_fts SELECT name FROM series;
+        CREATE VIRTUAL TABLE titles_fts USING fts4(title, tokenize=unicode61);
+        INSERT INTO titles_fts SELECT title FROM books;
 
         --CREATE INDEX authors_id_idx ON authors(author_id);
         --CREATE INDEX authors_name_idx ON authors(name);
         CREATE INDEX authorBook_book_idx ON author_to_book(book_id);
         CREATE INDEX authorBook_author_idx ON author_to_book(author_id);
-        CREATE VIRTUAL TABLE authors_fts USING fts3(name TEXT);
+        CREATE VIRTUAL TABLE authors_fts USING fts4(name, tokenize=unicode61);
         INSERT INTO authors_fts SELECT name FROM authors;
 
         --CREATE INDEX genres_id_idx ON genres(genre_id);
         --CREATE INDEX genres_name_idx ON genres(name);
         CREATE INDEX genreBook_book_idx ON genre_to_book(book_id);
         CREATE INDEX genreBook_author_idx ON genre_to_book(genre_id);
-        CREATE VIRTUAL TABLE genres_fts USING fts3(name TEXT);
+        CREATE VIRTUAL TABLE genres_fts USING fts4(name, tokenize=unicode61);
         INSERT INTO genres_fts SELECT name FROM genres;
 
         DROP TABLE author_to_book_temp;
