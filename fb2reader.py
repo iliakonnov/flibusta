@@ -2,7 +2,6 @@
 # -*- coding: utf8 -*-
 import os
 import codecs
-import sqlite3
 from zipfile import ZipFile
 from lxml import etree
 xmlns = '{http://www.gribuser.ru/xml/fictionbook/2.0}'
@@ -40,9 +39,9 @@ def getBook(fileName, zipPath):
             lang = None
 
         author_info = info.find("./{xmlns}author".format(xmlns=xmlns))
-        lastname = info.find("./{xmlns}author/{xmlns}last-name".format(xmlns=xmlns))
-        middlename = info.find("./{xmlns}author/{xmlns}middle-name".format(xmlns=xmlns))
-        firstname = info.find("./{xmlns}author/{xmlns}first-name".format(xmlns=xmlns))
+        lastname = author_info.find("./{xmlns}last-name".format(xmlns=xmlns))
+        middlename = author_info.find("./{xmlns}middle-name".format(xmlns=xmlns))
+        firstname = author_info.find("./{xmlns}first-name".format(xmlns=xmlns))
         author = {
             'firstname': firstname.text if firstname is not None else None,
             'middlename': middlename.text if middlename is not None else None,
@@ -59,14 +58,6 @@ def getBook(fileName, zipPath):
 
         pubInfo = root.find("{xmlns}description/{xmlns}publish-info".format(xmlns=xmlns))
         if pubInfo is not None:
-            '''
-            <book-name>Первый из могикан</book-name>
-            <publisher>Эксмо</publisher>
-            <city>Москва</city>
-            <year>2006</year>
-            <isbn>5-699-15149-4</isbn>
-            <sequence name="Русская фантастика" number="0" />
-            '''
             pubInfoElems = {
                 'bookName': pubInfo.find("./{xmlns}book-name".format(xmlns=xmlns)),
                 'publisher': pubInfo.find("./{xmlns}publisher".format(xmlns=xmlns)),
@@ -103,6 +94,7 @@ def getBook(fileName, zipPath):
             'author': author
         }
 
+
 if __name__ == "__main__":
     from pprint import pprint
     from sys import argv
@@ -118,6 +110,8 @@ if __name__ == "__main__":
     if result['image'] is not None:
         if result['imageMime'] is not None:
             imgExt = guess_extension(result['imageMime'])
+            if imgExt is None:
+                imgExt = '.cover'
         else:
             imgExt = '.cover'
         with open(result['bookId'] + imgExt, 'wb') as f:

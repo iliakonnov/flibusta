@@ -173,7 +173,7 @@ def addBooks(
         for first in iterator:
             yield chain([first], islice(iterator, size - 1))
 
-    chunkSize = 300
+    chunkSize = 500
 
     print('Adding series...')
     serNum = 0
@@ -282,10 +282,10 @@ def addBooks(
     def authorToBookIter():
         for b in books:
             for a in b['author'].split(':'):
-                yield (authors[a], b['lib_id'])
+                yield (b['lib_id'], authors[a])
     for i in chunks(authorToBookIter(), chunkSize):
         startTime = time.time()
-        conn.executemany('INSERT INTO author_to_book_temp VALUES (?, ?)', i)
+        conn.executemany('INSERT INTO author_to_book_temp(book_id, author_id) VALUES (?, ?)', i)
         conn.commit()
         endTime = time.time()
 
@@ -299,10 +299,10 @@ def addBooks(
     def genreToBookIter():
         for b in books:
             for g in b['genre'].split(':'):
-                yield (genres[g], b['lib_id'])
+                yield (b['lib_id'], genres[g])
     for i in chunks(genreToBookIter(), chunkSize):
         startTime = time.time()
-        conn.executemany('INSERT INTO genre_to_book_temp VALUES (?, ?)', i)
+        conn.executemany('INSERT INTO genre_to_book_temp(book_id, genre_id) VALUES (?, ?)', i)
         conn.commit()
         endTime = time.time()
 
@@ -352,19 +352,17 @@ def searchBooks(files):
                 serNum += 1
 
                 for g in book['genre'].split(':'):
-                    if g not in genres:
-                        genres[g] = genreNum
-                        genreNum += 1
+                    genres[g] = genreNum
+                    genreNum += 1
 
                 for a in book['author'].split(':'):
-                    if a not in authors:
-                        authors[a] = authorNum
-                        authorNum += 1
+                    authors[a] = authorNum
+                    authorNum += 1
 
                 books.append(book)
                 n += 1
 
-                if n % 500 == 0:
+                if n % 800 == 0:
                     print('{} books found...'.format(n))
     print('{} books found!'.format(n))
     return {
