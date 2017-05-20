@@ -9,7 +9,10 @@ app = Flask(__name__)
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
-        db = g._database = sqlite3.connect('flibusta.sqlite')
+        conn = sqlite3.connect('flibusta.sqlite')
+        conn.row_factory = sqlite3.Row
+
+        db = g._database = conn
     return db
 
 
@@ -60,38 +63,34 @@ def search():
         if value:
             parameters[key] = value
 
-    def check(sql):
-        print(sql)
-        return sql
-
-    result = get_db().execute(check('''
-    WITH sel_books AS (
-    SELECT {rowid} b.*, s.name AS serie
-    FROM books b, series s
-    WHERE b.serie_id = s.serie_id
-        {lang}
-        {serno_a} {serno_b}
-        {rate_a} {rate_b}
-        {title}
-        {serie}
-    ),
-    sel_authors AS (
-        SELECT a.name, b.book_id
-        FROM authors a, author_to_book b
-        WHERE a.author_id = b.author_id
-            {author}
-    ),
-    sel_genres AS (
-        SELECT g.name, b.book_id
-        FROM genres g, genre_to_book b
-        WHERE g.genre_id = b.genre_id
-            {genre}
-        )
-    SELECT sel_books.*, sel_authors.name  author, sel_genres.name AS genre
-    FROM sel_books, sel_authors, sel_genres
-    WHERE sel_books.book_id = sel_authors.book_id
-        AND sel_books.book_id = sel_genres.book_id
-    {limit}
+    result = get_db().execute('''
+        WITH sel_books AS (
+            SELECT {rowid} b.*, s.name AS serie
+            FROM books b, series s
+            WHERE b.serie_id = s.serie_id
+                {lang}
+                {serno_a} {serno_b}
+                {rate_a} {rate_b}
+                {title}
+                {serie}
+            ),
+        sel_authors AS (
+            SELECT a.name, b.book_id
+            FROM authors a, author_to_book b
+            WHERE a.author_id = b.author_id
+                {author}
+        ),
+        sel_genres AS (
+            SELECT g.name, b.book_id
+            FROM genres g, genre_to_book b
+            WHERE g.genre_id = b.genre_id
+                {genre}
+            )
+        SELECT sel_books.*, sel_authors.name  author, sel_genres.name AS genre
+        FROM sel_books, sel_authors, sel_genres
+        WHERE sel_books.book_id = sel_authors.book_id
+            AND sel_books.book_id = sel_genres.book_id
+        {limit}
     '''.format(
         rowid='b.rowid, ' if count else '',
         limit='ORDER BY sel_books.rowid limit :limit' if count else '',
@@ -115,14 +114,19 @@ def search():
                WHERE name MATCH :author
             )''' if author else '',
         genre='AND name=":genre"' if genre else ''
-    )), parameters)
+    ), parameters)
 
     response = []
-    if count:
-        result.fetchmany(count)
-        row = result.fetchone()
-        while row:
+    if int(start):
+        result.fetchmany(int(start))
+
+    if int(count):
+        for row in result.fetchmany(int(count)):
             response.append(dict(zip(row.keys(), row)))
+    else:
+        for row in result:
+            response.append(dict(zip(row.keys(), row)))
+
     return jsonify({
         'result': response,
         'parameters': parameters
