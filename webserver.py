@@ -1,7 +1,10 @@
 #!/usr/bin/python3.6
 # -*- coding: utf8 -*-
+import base64
 import sqlite3
-from flask import Flask, request, jsonify, g
+from fb2reader import getBook
+from time import time
+from flask import Flask, request, jsonify, abort, g
 
 app = Flask(__name__)
 
@@ -23,18 +26,37 @@ def close_connection(exception):
         db.close()
 
 
-@app.route('/all')
-def getAll():
-    result = []
-    for i in get_db().execute('SELECT * FROM books LIMIT 1000'):
-        result.append(tuple(i))
-    return jsonify(result)
+@app.route('/get')
+def get():
+    book_id = request.args.get('book_id', None)
+    file_id = request.args.get('file', None)
+
+    if not file_id:
+        books = get_db().execute(
+            'SELECT file FROM books WHERE book_id=?',
+            (book_id,)
+        ).fetchone()
+        if books:
+            file_id = books[0]
+        else:
+            return abort(400)
+
+    book = getBook(file_id, ZIPPATH)
+    if book['ok']:
+        # ./inp/fb2-119691-132107.inp/120661
+        book['result']['image'] = base64.b64encode(book['result']['image']).decode('utf-8') if isinstance(book['result']['image'], bytes) else book['result']['image']
+        book['result']['book'] = base64.b64encode(book['result']['book']).decode('utf-8') if isinstance(book['result']['book'], bytes) else book['result']['book']
+        return jsonify(book['result'])
+    else:
+        return abort(400)
 
 
 @app.route('/search')
 def search():
-    start = request.args.get('start', 0)
-    count = request.args.get('count', None)
+    startTime = time()
+
+    start = int(request.args.get('start', 0))
+    count = int(request.args.get('count', 0))
     author = request.args.get('author', None)
     title = request.args.get('title', None)
     serie = request.args.get('serie', None)
@@ -95,10 +117,10 @@ def search():
         rowid='b.rowid, ' if count else '',
         limit='ORDER BY sel_books.rowid limit :limit' if count else '',
         lang='AND lang=:lang' if lang else '',
-        serno_a='AND b.serno<:serno_max' if serno_max else '',
-        serno_b='AND b.serno>:serno_min' if serno_min else '',
-        rate_a='AND b.rate<:rate_max' if rate_max else '',
-        rate_b='AND b.rate>:rate_min' if rate_min else '',
+        serno_a='AND b.serno<=:serno_max' if serno_max else '',
+        serno_b='AND b.serno>=:serno_min' if serno_min else '',
+        rate_a='AND b.rate<=:rate_max' if rate_max else '',
+        rate_b='AND b.rate>=:rate_min' if rate_min else '',
         title='''
             AND b.title IN (
                 SELECT title FROM titles_fts WHERE title MATCH :title
@@ -117,11 +139,11 @@ def search():
     ), parameters)
 
     response = []
-    if int(start):
-        result.fetchmany(int(start))
+    if start:
+        result.fetchmany(start)
 
-    if int(count):
-        for row in result.fetchmany(int(count)):
+    if count:
+        for row in result.fetchmany(count):
             response.append(dict(zip(row.keys(), row)))
     else:
         for row in result:
@@ -129,9 +151,12 @@ def search():
 
     return jsonify({
         'result': response,
-        'parameters': parameters
+        'parameters': parameters,
+        'time': (time() - startTime) * 1000
     })
 
 
 if __name__ == "__main__":
+    from sys import argv
+    ZIPPATH = argv[1]
     app.run(debug=True)

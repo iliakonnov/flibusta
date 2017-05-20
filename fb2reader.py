@@ -2,7 +2,7 @@
 # -*- coding: utf8 -*-
 import os
 import codecs
-from zipfile import ZipFile
+import zipfile
 from lxml import etree
 xmlns = '{http://www.gribuser.ru/xml/fictionbook/2.0}'
 
@@ -10,7 +10,15 @@ xmlns = '{http://www.gribuser.ru/xml/fictionbook/2.0}'
 def getBook(fileName, zipPath):
     zipId, bookId = fileName.split('/')[-2:]
     zipId = zipId.rstrip('.inp')
-    with ZipFile(os.path.join(zipPath, zipId + '.zip'), 'r') as z:
+    with zipfile.ZipFile(os.path.join(zipPath, zipId + '.zip'), 'r') as z:
+        if bookId + '.fb2' not in z.namelist():
+            return {
+                'ok': False,
+                'error': 'File "{f}"" not found in archive "{a}"'.format(
+                    f=bookId + '.fb2',
+                    a=os.path.join(zipPath, zipId + '.zip')
+                )
+            }
         book = z.read(bookId + '.fb2')
         root = etree.XML(book)
         info = root.find("{xmlns}description/{xmlns}title-info".format(xmlns=xmlns))
@@ -56,31 +64,33 @@ def getBook(fileName, zipPath):
             serie = None
             serno = None
 
-        pubInfo = root.find("{xmlns}description/{xmlns}publish-info".format(xmlns=xmlns))
-        if pubInfo is not None:
-            pubInfoElems = {
-                'bookName': pubInfo.find("./{xmlns}book-name".format(xmlns=xmlns)),
-                'publisher': pubInfo.find("./{xmlns}publisher".format(xmlns=xmlns)),
-                'city': pubInfo.find("./{xmlns}city".format(xmlns=xmlns)),
-                'year': pubInfo.find("./{xmlns}year".format(xmlns=xmlns)),
-                'isbn': pubInfo.find("./{xmlns}isbn".format(xmlns=xmlns)),
-                'sequenceName': pubInfo.find("./{xmlns}sequence".format(xmlns=xmlns)),
-                'sequenceNum': pubInfo.find("./{xmlns}sequence".format(xmlns=xmlns))
-            }
+    pubInfo = root.find("{xmlns}description/{xmlns}publish-info".format(xmlns=xmlns))
+    if pubInfo is not None:
+        pubInfoElems = {
+            'bookName': pubInfo.find("./{xmlns}book-name".format(xmlns=xmlns)),
+            'publisher': pubInfo.find("./{xmlns}publisher".format(xmlns=xmlns)),
+            'city': pubInfo.find("./{xmlns}city".format(xmlns=xmlns)),
+            'year': pubInfo.find("./{xmlns}year".format(xmlns=xmlns)),
+            'isbn': pubInfo.find("./{xmlns}isbn".format(xmlns=xmlns)),
+            'sequenceName': pubInfo.find("./{xmlns}sequence".format(xmlns=xmlns)),
+            'sequenceNum': pubInfo.find("./{xmlns}sequence".format(xmlns=xmlns))
+        }
 
-            publishInfo = {
-                'bookName': pubInfoElems['bookName'].text if pubInfoElems['bookName'] is not None else None,
-                'publisher': pubInfoElems['publisher'].text if pubInfoElems['publisher'] is not None else None,
-                'city': pubInfoElems['city'].text if pubInfoElems['city'] is not None else None,
-                'year': pubInfoElems['year'].text if pubInfoElems['year'] is not None else None,
-                'isbn': pubInfoElems['isbn'].text if pubInfoElems['isbn'] is not None else None,
-                'sequenceName': pubInfoElems['sequenceName'].get('name') if pubInfoElems['sequenceName'] is not None else None,
-                'sequenceNum': pubInfoElems['sequenceNum'].get('number') if pubInfoElems['sequenceNum'] is not None else None
-            }
-        else:
-            publishInfo = None
+        publishInfo = {
+            'bookName': pubInfoElems['bookName'].text if pubInfoElems['bookName'] is not None else None,
+            'publisher': pubInfoElems['publisher'].text if pubInfoElems['publisher'] is not None else None,
+            'city': pubInfoElems['city'].text if pubInfoElems['city'] is not None else None,
+            'year': pubInfoElems['year'].text if pubInfoElems['year'] is not None else None,
+            'isbn': pubInfoElems['isbn'].text if pubInfoElems['isbn'] is not None else None,
+            'sequenceName': pubInfoElems['sequenceName'].get('name') if pubInfoElems['sequenceName'] is not None else None,
+            'sequenceNum': pubInfoElems['sequenceNum'].get('number') if pubInfoElems['sequenceNum'] is not None else None
+        }
+    else:
+        publishInfo = None
 
-        return {
+    return {
+        'ok': True,
+        'result': {
             'bookId': bookId,
             'book': book,
             'image': image,
@@ -93,6 +103,7 @@ def getBook(fileName, zipPath):
             'serno': serno,
             'author': author
         }
+    }
 
 
 if __name__ == "__main__":
