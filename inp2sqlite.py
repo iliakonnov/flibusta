@@ -26,7 +26,9 @@ def initDb(conn: sqlite3.Connection):
         lang TEXT,
         rate INTEGER,
         keywords TEXT,
-        FOREIGN KEY(serie_id) REFERENCES series(serie_id)
+        authors TEXT,
+        genres TEXT,
+        FOREIGN KEY(serie_id) REFERENCES series(serie_id) ON DELETE CASCADE
     );
 
     CREATE TABLE authors (
@@ -38,8 +40,8 @@ def initDb(conn: sqlite3.Connection):
         book_id INTEGER,
         author_id INTEGER,
         PRIMARY KEY(book_id, author_id),
-        FOREIGN KEY(book_id) REFERENCES books(book_id),
-        FOREIGN KEY(author_id) REFERENCES genres(author_id)
+        FOREIGN KEY(book_id) REFERENCES books(book_id) ON DELETE CASCADE,
+        FOREIGN KEY(author_id) REFERENCES authors(author_id) ON DELETE CASCADE
     );
 
     CREATE TABLE genres (
@@ -51,8 +53,8 @@ def initDb(conn: sqlite3.Connection):
         book_id INTEGER,
         genre_id INTEGER,
         PRIMARY KEY(book_id, genre_id),
-        FOREIGN KEY(book_id) REFERENCES books(book_id),
-        FOREIGN KEY(genre_id) REFERENCES genres(genre_id)
+        FOREIGN KEY(book_id) REFERENCES books(book_id) ON DELETE CASCADE,
+        FOREIGN KEY(genre_id) REFERENCES genres(genre_id) ON DELETE CASCADE
     );
 
     CREATE TABLE series_temp (
@@ -70,7 +72,9 @@ def initDb(conn: sqlite3.Connection):
         add_date DATE,
         lang TEXT,
         rate INTEGER,
-        keywords TEXT
+        keywords TEXT,
+        authors TEXT,
+        genres TEXT
     );
 
     CREATE TABLE authors_temp (
@@ -121,8 +125,14 @@ def doneDb(conn: sqlite3.Connection):
         INSERT INTO genres SELECT * FROM genres_temp;
         INSERT INTO authors SELECT * FROM authors_temp;
         INSERT INTO books SELECT * FROM books_temp;
+
         INSERT INTO genre_to_book SELECT * FROM genre_to_book_temp;
         INSERT INTO author_to_book SELECT * FROM author_to_book_temp;
+
+        PRAGMA foreign_keys = ON;
+        DELETE FROM authors WHERE name = '';
+        DELETE FROM series WHERE name = '';
+        DELETE FROM genres WHERE name = '';
 
         --CREATE INDEX books_id_idx ON books(book_id);
 
@@ -146,8 +156,6 @@ def doneDb(conn: sqlite3.Connection):
         --CREATE INDEX genres_name_idx ON genres(name);
         CREATE INDEX genreBook_book_idx ON genre_to_book(book_id);
         CREATE INDEX genreBook_author_idx ON genre_to_book(genre_id);
-        CREATE VIRTUAL TABLE genres_fts USING fts4(name, tokenize=unicode61);
-        INSERT INTO genres_fts SELECT name FROM genres;
 
         DROP TABLE author_to_book_temp;
         DROP TABLE books_temp;
@@ -248,7 +256,9 @@ def addBooks(
                 )),
                 'lang': i['lang'],
                 'rate': i['librate'],
-                'keywords': i['keywords']
+                'keywords': i['keywords'],
+                'authors': i['author'],
+                'genres': i['genre']
             }
     for i in chunks(booksIter(), chunkSize):
         startTime = time.time()
@@ -263,7 +273,9 @@ def addBooks(
                 :add_date,
                 :lang,
                 :rate,
-                :keywords
+                :keywords,
+                :authors,
+                :genres
             )
         ''', i)
         conn.commit()
@@ -364,6 +376,7 @@ def searchBooks(files):
 
                 if n % 800 == 0:
                     print('{} books found...'.format(n))
+
     print('{} books found!'.format(n))
     return {
         'books': books,
