@@ -1,5 +1,5 @@
 from time import time
-from fb2reader import getBook
+from fb2reader import getBook as getFb2
 
 def getBook(conn, zippath, book_id=None, file_id=None):
     if not file_id:
@@ -15,7 +15,7 @@ def getBook(conn, zippath, book_id=None, file_id=None):
                 'error': 'Book not found'
             }
 
-    return getBook(file_id, zippath)
+    return getFb2(file_id, zippath)
 
 
 def search(
@@ -106,7 +106,7 @@ def search(
                 WHERE g.genre_id = b.genre_id
                     AND name=:genre
             )''' if genre else '',
-        order='ORDER BY sel_books.bookid' if count or start else '',
+        order='ORDER BY sel_books.book_id' if count or start else '',
         limit='LIMIT :limit' if count else ''
     )
     result = conn.execute(sql, parameters)
@@ -128,9 +128,9 @@ def search(
         'result': response,
         'parameters': parameters,
         'time': {
-            'total': (endTime - startTime) * 1000,
+            'total': (time() - startTime) * 1000,
             'sql': (sqlEnd - sqlTime) * 1000,
             'processing': (endTime - sqlEnd) * 1000
         },
-        'sql': sql
+        # 'sql': sql
     }

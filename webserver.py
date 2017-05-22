@@ -30,7 +30,7 @@ def get():
     book_id = request.args.get('book_id', None)
     file_id = request.args.get('file', None)
 
-    book = api.getBook(get_db(), book_id, file_id)
+    book = api.getBook(get_db(), ZIPPATH, book_id, file_id)
     if book['ok']:
         # ./inp/fb2-119691-132107.inp/120661
         book['result']['image'] = base64.b64encode(book['result']['image']).decode(
@@ -39,7 +39,7 @@ def get():
             'utf-8') if isinstance(book['result']['book'], bytes) else book['result']['book']
         return jsonify(book['result'])
     else:
-        return abort(400)
+        return abort(400, book['error'])
 
 
 @app.route('/search')
@@ -56,10 +56,20 @@ def search():
     rate_max = request.args.get('rate_max', None)
     lang = request.args.get('lang', None)
 
-    return jsonify(api.search(
-        get_db(),
-        start, count, author, title, serie, genre, serno_min, serno_max, rate_min, rate_max, lang
-    ))
+    if (
+        count < 1000 or
+        [i for i in author if i.isalnum()] or
+        [i for i in title if i.isalnum()] or
+        [i for i in serie if i.isalnum()] or
+        [i for i in genre if i.isalnum()]
+    ):
+        return jsonify(api.search(
+            get_db(),
+            start, count, author, title, serie, genre,
+            serno_min, serno_max, rate_min, rate_max, lang
+        ))
+    else:
+        return abort(400)
 
 
 if __name__ == "__main__":
