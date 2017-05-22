@@ -28,7 +28,7 @@ def initDb(conn: sqlite3.Connection):
         keywords TEXT,
         authors TEXT,
         genres TEXT,
-        FOREIGN KEY(serie_id) REFERENCES series(serie_id) ON DELETE CASCADE
+        FOREIGN KEY(serie_id) REFERENCES series(serie_id)
     );
 
     CREATE TABLE authors (
@@ -131,7 +131,6 @@ def doneDb(conn: sqlite3.Connection):
 
         PRAGMA foreign_keys = ON;
         DELETE FROM authors WHERE name = '';
-        DELETE FROM series WHERE name = '';
         DELETE FROM genres WHERE name = '';
 
         --CREATE INDEX books_id_idx ON books(book_id);
