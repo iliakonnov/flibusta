@@ -98,6 +98,10 @@ def index():
 def css():
     return app.send_static_file('css.css')
 
+@app.route('/index.js')
+def indexJs():
+    return app.send_static_file('index.js')
+
 
 if __name__ == "__main__":
     from sys import argv
