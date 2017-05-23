@@ -58,7 +58,7 @@ Web API поиска по библиотеке
     - **firstname**: Имя
     - **lastname**: Фамилия
     - **middlename**: Отчество
-* **book**: fb2 книги, закодированный в base64
+* **book**: fb2.zip книги, закодированный в base64
 * **book_id**: ID книги
 * **image**: Обложка книги, закодированная в base64
 * **imageMime**: mime-type формата обложки

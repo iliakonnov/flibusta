@@ -3,6 +3,7 @@
 import os
 import codecs
 import zipfile
+from io import BytesIO
 from lxml import etree
 xmlns = '{http://www.gribuser.ru/xml/fictionbook/2.0}'
 
@@ -88,11 +89,20 @@ def getBook(fileName, zipPath):
     else:
         publishInfo = None
 
+    fb2Name = bookId + '.fb2'
+    if publishInfo:
+        if publishInfo['bookName']:
+            fb2Name = publishInfo['bookName']
+    fb2Zip = BytesIO()
+    with zipfile.ZipFile(fb2Zip, 'w', zipfile.ZIP_DEFLATED) as zipF:
+        zipF.writestr(zipfile.ZipInfo(filename=fb2Name), book)
+    fb2Zip.seek(0)
+
     return {
         'ok': True,
         'result': {
             'bookId': bookId,
-            'book': book,
+            'book': fb2Zip.read(),
             'image': image,
             'imageMime': imageMime,
             'annotation': annotation,
