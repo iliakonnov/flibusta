@@ -25,3 +25,8 @@
     border-bottom-left-radius:0;
     border-right-width: 1px;
 }
+
+.error {
+    padding: 40px 15px;
+    text-align: center;
+}
