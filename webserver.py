@@ -29,14 +29,22 @@ def close_connection(exception):
 def get():
     book_id = request.args.get('book_id', None)
     file_id = request.args.get('file', None)
+    encoding = request.args.get('encoding', 'base64')
 
     book = api.getBook(get_db(), ZIPPATH, book_id, file_id)
+
+    if encoding == 'base64':
+        encoder = base64.b64encode
+    elif encoding == 'ascii85':
+        encoder = base64.a85encode
+    else:
+        return abort(400, 'Unknown encoding')
+
     if book['ok']:
-        # ./inp/fb2-119691-132107.inp/120661
-        book['result']['image'] = base64.b64encode(book['result']['image']).decode(
-            'utf-8') if isinstance(book['result']['image'], bytes) else book['result']['image']
-        book['result']['book'] = base64.b64encode(book['result']['book']).decode(
-            'utf-8') if isinstance(book['result']['book'], bytes) else book['result']['book']
+        if isinstance(book['result']['image'], bytes):
+            book['result']['image'] = encoder(book['result']['image']).decode('utf-8')
+        if isinstance(book['result']['book'], bytes):
+            book['result']['book'] = encoder(book['result']['book']).decode('utf-8')
         return jsonify(book['result'])
     else:
         return abort(400, book['error'])
