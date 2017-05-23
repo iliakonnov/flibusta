@@ -3,9 +3,9 @@
 import base64
 import sqlite3
 import api
-from flask import Flask, request, jsonify, abort, g
+from flask import Flask, request, jsonify, abort, render_template, g
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/static/')
 
 
 def get_db():
@@ -25,8 +25,8 @@ def close_connection(exception):
         db.close()
 
 
-@app.route('/get')
-def get():
+@app.route('/api/get')
+def api_get():
     book_id = request.args.get('book_id', None)
     file_id = request.args.get('file', None)
     encoding = request.args.get('encoding', 'base64')
@@ -50,8 +50,8 @@ def get():
         return abort(400, book['error'])
 
 
-@app.route('/search')
-def search():
+@app.route('/api/search')
+def api_search():
     start = int(request.args.get('start', 0))
     count = int(request.args.get('count', 0))
     author = request.args.get('author', None)
@@ -65,11 +65,10 @@ def search():
     lang = request.args.get('lang', None)
 
     if (
-        count < 1000 or
+        (count < 1000 and count > 0) or
         [i for i in author if i.isalnum()] or
         [i for i in title if i.isalnum()] or
-        [i for i in serie if i.isalnum()] or
-        [i for i in genre if i.isalnum()]
+        [i for i in serie if i.isalnum()]
     ):
         return jsonify(api.search(
             get_db(),
@@ -80,7 +79,28 @@ def search():
         return abort(400)
 
 
+@app.route('/book/<book_id>')
+def bookInfo(book_id):
+    pass
+
+
+@app.route('/search')
+def search():
+    pass
+
+
+@app.route('/')
+def index():
+    return app.send_static_file('index.html')
+
+
+@app.route('/css.css')
+def css():
+    return app.send_static_file('css.css')
+
+
 if __name__ == "__main__":
     from sys import argv
+    import os
     ZIPPATH = argv[1]
     app.run(debug=True)

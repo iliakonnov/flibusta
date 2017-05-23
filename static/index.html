@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Поиск книг</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <link rel="stylesheet" href="/css.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="vertical-center">
+            <form class="form vertical-center" action="/api/search">
+                <div class="list-group">
+                    <div class="list-group-item">
+                        <div class="input-group">
+                            <input type="text" name="title" class="form-control input-lg" placeholder="Поиск книги по названию" />
+                            <span class="input-group-btn">
+                                <button class="btn btn-primary btn-lg" type="submit">
+                                    <i class="glyphicon glyphicon-search"></i>
+                                </button>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="list-group-item">
+                        <button id="advanced" class="btn btn-sm" type="button">
+                            <span>Расширенный поиск</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+            <form class="form vertical-center" style="display: none" action="/api/search">
+                <div class="list-group">
+                    <div class="list-group-item">
+                        <button id="normal" class="btn btn-sm" type="button">
+                            <span>Обычный поиск</span>
+                        </button>
+                    </div>
+                    <div class="list-group-item">
+                        <input type="text" name="title" class="form-control input-lg" placeholder="Название книги" />
+                    </div>
+                    <div class="list-group-item">
+                        <input type="text" name="author" class="form-control input-lg" placeholder="Имя автора" />
+                    </div>
+                    <div class="list-group-item">
+                        <input type="text" name="serie" class="form-control input-lg" placeholder="Название серии" />
+                    </div>
+                    <div class="list-group-item">
+                        <select type="text" name="genre" class="form-control input-lg">
+                            <option value="" disabled selected hidden>Жанр книги</option>
+                            <!-- Тут должны быть жанры, которые заполняет js на основе словаря-->
+                        </select>
+                    </div>
+                    <div class="list-group-item">
+                        <div class="list-group-horizontal">
+                            <div class="list-group-item">
+                                <input type="number" name="serno_min" min="-1" class="form-control input-lg" placeholder="Минимальный номер книги в серии (включительно)" />
+                            </div>
+                            <div class="list-group-item">
+                                <input type="number" name="serno_max" min="-1" class="form-control input-lg" placeholder="Максимальный номер книги в серии (включительно)" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="list-group-item">
+                        <div class="list-group-horizontal">
+                            <div class="list-group-item">
+                                <input type="number" name="rate_min" min="-1" max="5" class="form-control input-lg" placeholder="Минимальный рейтинг книги" />
+                            </div>
+                            <div class="list-group-item">
+                                <input type="number" name="rate_max" min="-1" max="5" class="form-control input-lg" placeholder="Максимальный рейтинг книги" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="list-group-item">
+                        <select type="text" name="lang" class="form-control input-lg">
+                            <option value="" disabled selected hidden>Язык книги</option>
+                            <!-- Тут должны быть языки, которые заполняет js на основе словаря-->
+                        </select>
+                    </div>
+                    <div class="list-group-item">
+                        <button class="btn btn-block btn-primary btn-lg" type="submit">Найти</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>
