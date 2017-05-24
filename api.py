@@ -39,6 +39,7 @@ def getBook(conn, zippath, book_id=None):
 
 def search(
         conn,
+        book_id=None, author_id=None, serie_id=None,
         start=0, count=0, author=None, title=None, serie=None, genre=None,
         serno_min=None, serno_max=None, rate_min=None, rate_max=None, lang=None
 ):
@@ -46,6 +47,9 @@ def search(
 
     params = {
         'limit': start + count if count else None,
+        'book_id': book_id,
+        'author_id': author_id,
+        'serie_id': serie_id,
         'lang': lang,
         'serno_max': serno_max,
         'serno_min': serno_min,
@@ -64,36 +68,26 @@ def search(
 
     sqlTime = time()
     sql = '''
-        WITH sel_books AS (
-            SELECT b.*, s.name AS serie
-            FROM books b, series s
-            WHERE b.serie_id = s.serie_id
-            {lang}
-            {serno_a} {serno_b}
-            {rate_a} {rate_b}
-            {title}
-            {serie}
-        ),
-        list_authors AS (
-            SELECT b.book_id, GROUP_CONCAT(a.name, ':') AS author_list
-            FROM authors a, author_to_book b
-            WHERE a.author_id = b.author_id
-            GROUP BY b.book_id
-        ),
-        list_genres AS (
-            SELECT b.book_id, GROUP_CONCAT(g.name, ':') AS genre_list
-            FROM genres g, genre_to_book b
-            WHERE g.genre_id = b.genre_id
-            GROUP BY b.book_id
-        )
-        SELECT sel_books.*
-        FROM sel_books
-        WHERE 1=1
+        SELECT b.*, s.name AS serie
+        FROM books b, series s
+        WHERE b.serie_id = s.serie_id
+        {book_id}
+        {author_id}
+        {serie_id}
+
+        {lang}
+        {serno_a} {serno_b}
+        {rate_a} {rate_b}
+        {title}
+        {serie}
         {author}
         {genre}
         {order}
         {limit}
     '''.format(
+        book_id='AND book_id=:book_id' if book_id else '',
+        author_id='AND book_id=:author_id' if author_id else '',
+        serie_id='AND book_id=:serie_id' if serie_id else '',
         lang='AND lang=:lang' if lang else '',
         serno_a='AND b.serno<=:serno_max' if serno_max else '',
         serno_b='AND b.serno>=:serno_min' if serno_min else '',
@@ -108,7 +102,7 @@ def search(
                 SELECT name FROM series_fts WHERE name MATCH :serie
             )''' if serie else '',
         author='''
-            AND sel_books.book_id IN (
+            AND b.book_id IN (
                 SELECT b.book_id
                 FROM authors a, author_to_book b
                 WHERE a.author_id = b.author_id
@@ -119,13 +113,13 @@ def search(
                     )
             )''' if author else '',
         genre='''
-            AND sel_books.book_id IN (
+            AND b.book_id IN (
                 SELECT b.book_id
                 FROM genres g, genre_to_book b
                 WHERE g.genre_id = b.genre_id
                     AND name=:genre
             )''' if genre else '',
-        order='ORDER BY sel_books.book_id' if count or start else '',
+        order='ORDER BY b.book_id' if count or start else '',
         limit='LIMIT :limit' if count else ''
     )
     result = conn.execute(sql, parameters)

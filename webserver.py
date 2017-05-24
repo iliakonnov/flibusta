@@ -42,7 +42,7 @@ def close_connection(exception):
 @app.before_request
 def before_request():
     g.request_start_time = time.time()
-    g.request_time = lambda: "%.5fs" % (time.time() - g.request_start_time)
+    g.request_time = lambda: (time.time() - g.request_start_time) * 1000
 
 
 @app.route('/api/get')
@@ -74,6 +74,9 @@ def api_get():
 
 @app.route('/api/search')
 def api_search():
+    book_id = request.args.get('book_id', None)
+    author_id = request.args.get('author_id', None)
+    serie_id = request.args.get('serie_id', None)
     start = int(request.args.get('start', 0))
     count = int(request.args.get('count', 0))
     author = request.args.get('author', None)
@@ -87,6 +90,7 @@ def api_search():
     lang = request.args.get('lang', None)
 
     if (
+        book_id or author_id or serie_id or
         (count < 1000 and count > 0) or
         (author and [i for i in author if i.isalnum()]) or
         (title and [i for i in title if i.isalnum()]) or
@@ -94,6 +98,7 @@ def api_search():
     ):
         return jsonify(api.search(
             get_db(),
+            book_id, author_id, serie_id,
             start, count, author, title, serie, genre,
             serno_min, serno_max, rate_min, rate_max, lang
         ))
