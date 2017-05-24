@@ -3,6 +3,8 @@
 
 <head>
     {% include "head.tpl" %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.3/FileSaver.min.js" integrity="sha256-FPJJt8nA+xL4RU6/gsriA8p8xAeLGatoyTjldvQKGdE=" crossorigin="anonymous"></script>
+    <script src="https://cdn.rawgit.com/dorentus/9385976/raw/dfd6b5b37d38d97510bb161ac049834ca998829b/ascii85.js"></script>
     {% set title = book['db']['title'] %}
     {% if 'publish_info' in book['fb2'] %}
         {% if book['fb2']['publish_info'] %}
@@ -35,7 +37,9 @@
         {# Автор #}
         <h2>
             {% if book['fb2']['author'] %}
-                {{book['fb2']['author']['lastname']}} {{book['fb2']['author']['firstname']}} {{book['fb2']['author']['middlename']}}
+                {{book['fb2']['author']['lastname'] if book['fb2']['author']['lastname'] else ""}}
+                {{book['fb2']['author']['firstname'] if book['fb2']['author']['firstname'] else ""}}
+                {{book['fb2']['author']['middlename'] if book['fb2']['author']['middlename'] else ""}}
             {% else %}
                 {{ book['db']['authors'].replace(',', ' ').replace(':', ', ').rstrip(', ') }}
             {% endif %}
@@ -76,20 +80,50 @@
         {% endif %}
 
         {# Скачать #}
-        <p><a download="{{ title }}.fb2.zip" id="download" href="#" class="btn btn-lg btn-primary"><span class="glyphicon glyphicon-download"></span> Скачать fb2 ({{ (book['db']['size'] | int) // 1024 }} Кб)</a></p>
+        <p><a id="download" href="#{{ title }}.fb2.zip" class="btn btn-lg btn-primary"><span class="glyphicon glyphicon-download"></span> Скачать fb2 ({{ (book['db']['size'] | int) // 1024 }} Кб)</a></p>
     </div>
-    <script>
-        {# Скачать #}
-        $('#download').attr('href', "data:application/x-zip-compressed-fb2;base64,{{ book['fb2']['book'] }}")
-
+    <script type="text/javascript">
         {# Обложка #}
         {% if book['fb2']['image'] %}
+            var cover = {{ book['fb2']['image']|tojson }};
             {% if book['fb2']['imageMime'] %}
                 $('#cover').attr('src', "data:{{ book['fb2']['imageMime'] }};base64,{{ book['fb2']['image'] }}")
             {% else %}
-                $('#cover').attr('src', "data:image/jpg;base64;{{ book['fb2']['image'] }}")
+                $('#cover').attr('src', "data:image/jpg;base64,{{ book['fb2']['image'] }}")
             {% endif %}
         {% endif %}
+    </script>
+    <script type="text/javascript">
+        {# Скачать #}
+        function b64toBlob(b64Data, contentType, sliceSize) {
+            // https://stackoverflow.com/a/16245768
+            contentType = contentType || '';
+            sliceSize = sliceSize || 512;
+
+            var byteCharacters = atob(b64Data);
+            var byteArrays = [];
+
+            for (var offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+                var slice = byteCharacters.slice(offset, offset + sliceSize);
+
+                var byteNumbers = new Array(slice.length);
+                for (var i = 0; i < slice.length; i++) {
+                    byteNumbers[i] = slice.charCodeAt(i);
+                }
+
+                var byteArray = new Uint8Array(byteNumbers);
+
+                byteArrays.push(byteArray);
+            }
+
+            var blob = new Blob(byteArrays, {type: contentType});
+            return blob;
+        }
+        var book = "{{ book['fb2']['book'] }}";
+        $('#download').click( function(event){
+            event.preventDefault();
+            saveAs(b64toBlob(book, 'application/x-zip-compressed-fb2'), "{{ title }}.fb2.zip");
+        });
     </script>
 </body>
 
