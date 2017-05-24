@@ -186,7 +186,7 @@ def addBooks(
     serNum = 0
     serTotal = len(series)
 
-    seriesIter = ((num, name) for name, num in series.items())
+    seriesIter = ((num['serie_id'], name) for name, num in series.items())
     for i in chunks(seriesIter, chunkSize):
         startTime = time.time()
         conn.executemany('INSERT INTO series_temp VALUES (?, ?)', i)
@@ -246,8 +246,9 @@ def addBooks(
             yield {
                 'book_id': i['lib_id'],
                 'title': i['title'],
-                'serie_id': series[i['series']],
-                'serno': i['serno'],
+                'serie_id': series[i['series']]['serie_id'],
+                'serno': i['serno'] +
+                (1 if i['serno'] != -1 and series[i['series']]['zero'] else 0),
                 'size': i['size'],
                 'file': i['file'],
                 'add_date': int(time.mktime(
@@ -359,8 +360,14 @@ def searchBooks(files):
                     'keywords': splitted[13]
                 }
 
-                series[book['series']] = serNum
-                serNum += 1
+                if book['series'] not in series:
+                    series[book['series']] = {
+                        'serie_id': serNum,
+                        'zero': book['serno'] == 0
+                    }
+                    serNum += 1
+                elif book['serno'] == 0:
+                    series[book['series']]['zero'] = True
 
                 for g in book['genre'].split(':'):
                     genres[g] = genreNum
