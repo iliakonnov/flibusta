@@ -125,18 +125,18 @@ def search():
             result=result
         )
     else:
-        return app.send_static_file('searchError.html')
-
+        return render_template('searchError.html')
 
 
 @app.route('/')
 def index():
-    return app.send_static_file('index.html')
+    return render_template('index.html')
 
 
 @app.route('/css.css')
 def css():
     return app.send_static_file('css.css')
+
 
 @app.route('/index.js')
 def indexJs():

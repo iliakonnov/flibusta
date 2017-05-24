@@ -2,82 +2,103 @@
 <html>
 
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% include "head.tpl" %}
     <title>Поиск книги</title>
-    <link rel="stylesheet" href="/css.css">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
-    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-    <!--[if lt IE 9]>
-      <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
-      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-    <![endif]-->
 </head>
 
 <body>
     <div class="container">
         <h1>Поиск</h1>
+        {% include "search.tpl" %}
         <div class="panel panel-info">
             <div class="panel-heading">
                 Параметры поиска
             </div>
             <div class="panel-body">
-                {% for key, value in result['parameters'].items() %} {% if value %}
-                <p>{{ params_translation[key] }}: {{ value }}</p>
-                {% endif %} {% endfor %}
+                <table class="table">
+                    {% for key, value in result['parameters'].items() %} {% if value %}
+                        <tr>
+                            <td class="col-md-2">{{ params_translation[key] }}</td>
+                            <td>{{ value }}</td>
+                        </tr>
+                    {% endif %} {% endfor %}
+                </table>
             </div>
         </div>
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                Статистика поиска
+            </div>
+            <div class="panel-body">
+                <table class="table">
+                    <tr>
+                        <td class="col-md-2">Обработка</td>
+                        <td>{{ result['time']['processing'] }} мс. </td>
+                    </tr>
+                    <tr>
+                        <td class="col-md-2">Запрос к БД</td>
+                        <td>{{ result['time']['sql'] }} мс. </td>
+                    </tr>
+                    <tr>
+                        <td class="col-md-2">Всего</td>
+                        <td>{{ result['time']['total'] }} мс. </td>
+                    </tr>
+                    <tr>
+                        <td class="col-md-2">Найдено книг</td>
+                        <td>{{ result['result'] | length }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <h2>Результаты поиска</h2>
         <div class="panel-group">
             {% for book in result['result']%}
-            <div class="panel panel-default">
-                <div class="panel-heading">{{book['title']}}</div>
-                <div class="panel-body">
-                    <table class="table">
-                        <tr>
-                            <th>Название</th>
-                            <th>{{ book['title'] }}</th>
-                        </tr>
-                        <tr>
-                            <td>Авторы</td>
-                            <td>{{ book['authors'].replace(',', ' ').replace(':', ', ').rstrip(', ') }}</td>
-                        </tr>
-                        {% if book['serie'] %}
-                        <tr>
-                            <td>Серия книг</td>
-                            <td>{{ book['serie'] }} <b>(№{{ book['serno'] + 1 }})</b></td>
-                        </tr>
-                        {% endif %}
-                        <tr>
-                            <td>Жанры</td>
-                            <td>
-                                {% for genre in book['genres'].split(':') %}
-                                    {% if genre %}
-                                        {{ genres_translation[genre] + ',' }}
-                                    {% endif %}
-                                {% endfor %}
-                            </td>
-                        </tr>
-                        {% if book['rate'] != -1 %}
-                        <tr>
-                            <td>Рейтинг</td>
-                            <td>{{ book['rate'] }}</td>
-                        </tr>
-                        {% endif %} {% if book['keywords'] %}
-                        <tr>
-                            <td>Ключевые слова</td>
-                            <td>{{ book['keywords'] }}</td>
-                        </tr>
-                        {% endif %}
-                        <tr>
-                            <td>Язык</td>
-                            <td>{{ book['lang'] }}</td>
-                        </tr>
-                    </table>
+                <div class="panel panel-default">
+                    <div class="panel-heading">{{book['title']}}</div>
+                    <div class="panel-body">
+                        <table class="table">
+                            <tr>
+                                <td class="col-md-2">Название</td>
+                                <td>{{ book['title'] }}</td>
+                            </tr>
+                            <tr>
+                                <td class="col-md-2">Авторы</td>
+                                <td>{{ book['authors'].replace(',', ' ').replace(':', ', ').rstrip(', ') }}</td>
+                            </tr>
+                            {% if book['serie'] %}
+                            <tr>
+                                <td class="col-md-2">Серия книг</td>
+                                <td>{{ book['serie'] }} <b>(№{{ book['serno'] + 1 }})</b></td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <td class="col-md-2">Жанры</td>
+                                <td>
+                                    {% for genre in book['genres'].split(':') %}
+                                        {% if genre %}
+                                            {{ genres_translation[genre] + ',' }}
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                            {% if book['rate'] != -1 %}
+                            <tr>
+                                <td class="col-md-2">Рейтинг</td>
+                                <td>{{ book['rate'] }}</td>
+                            </tr>
+                            {% endif %} {% if book['keywords'] %}
+                            <tr>
+                                <td class="col-md-2">Ключевые слова</td>
+                                <td>{{ book['keywords'] }}</td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <td class="col-md-2">Язык</td>
+                                <td>{{ book['lang'] }}</td>
+                            </tr>
+                        </table>
+                    </div>
                 </div>
-            </div>
             {% endfor %}
         </div>
     </div>
