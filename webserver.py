@@ -145,6 +145,5 @@ def indexJs():
 
 if __name__ == "__main__":
     from sys import argv
-    import os
     ZIPPATH = argv[1]
-    app.run(debug=True)
+    app.run(host='0.0.0.0', debug=True)
