@@ -85,10 +85,10 @@ def search(
         {order}
         {limit}
     '''.format(
-        book_id='AND book_id=:book_id' if book_id else '',
-        author_id='AND book_id=:author_id' if author_id else '',
-        serie_id='AND book_id=:serie_id' if serie_id else '',
-        lang='AND lang=:lang' if lang else '',
+        book_id='AND b.book_id=:book_id' if book_id else '',
+        author_id='AND b.author_id=:author_id' if author_id else '',
+        serie_id='AND b.serie_id=:serie_id' if serie_id else '',
+        lang='AND b.lang=:lang' if lang else '',
         serno_a='AND b.serno<=:serno_max' if serno_max else '',
         serno_b='AND b.serno>=:serno_min' if serno_min else '',
         rate_a='AND b.rate<=:rate_max' if rate_max else '',

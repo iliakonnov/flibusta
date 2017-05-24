@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    {% include "head.tpl" %}
+    <title>{{listName}} {{title}}</title>
+</head>
+
+<body>
+    <div class="container">
+        <h1>{{listName}} <b>"{{books[0]['serie']}}"</b></h1>
+        {% include "listBooks.tpl" %}
+    </div>
+    {% include "footer.tpl" %}
+</body>
+
+</html>
