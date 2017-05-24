@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    {% include "head.tpl" %}
+    {% set title = book['db']['title'] %}
+    {% if 'publish_info' in book['fb2'] %}
+        {% if book['fb2']['publish_info'] %}
+            {% if 'bookName' in book['fb2']['publish_info'] %}
+                {% set title = book['fb2']['publish_info']['bookName'] %}}
+            {% endif %}
+        {% endif %}
+    {% endif %}
+    <title>{{title}}</title>
+</head>
+
+<body>
+    <div class="container">
+        <h1>
+            {{title}}
+            {% if book['fb2']['sequenceName'] %}
+                <small>
+                    {{ book['fb2']['sequenceName'] }}
+                    {% if book['fb2']['sequenceNum'] %}
+                        <b>(№{{book['fb2']['sequenceNum']}})</b>
+                    {% endif %}
+                </small>
+            {% elif book['db']['serie'] %}
+                <small>
+                    {{ book['db']['serie'] }} <b>(№{{ book['db']['serno'] + 1 }})</b>
+                </small>
+            {% endif %}
+        </h1>
+
+        {# Автор #}
+        <h2>
+            {% if book['fb2']['author'] %}
+                {{book['fb2']['author']['lastname']}} {{book['fb2']['author']['firstname']}} {{book['fb2']['author']['middlename']}}
+            {% else %}
+                {{ book['db']['authors'].replace(',', ' ').replace(':', ', ').rstrip(', ') }}
+            {% endif %}
+        </h2>
+
+        {# Обложка #}
+        {% if book['fb2']['image'] %}
+            <img id="cover" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="/>
+        {% endif %}
+
+        {# Описание #}
+        {% if book['fb2']['annotation'] %}
+            <p><span class="lead">Описание: </span>{{ book['fb2']['annotation'] }}</p>
+        {% endif %}
+
+        {# Рейтинг #}
+        {% if book['db']['rate'] != -1 %}
+            <p><span class="lead">Рейтинг: </span>{{ book['db']['rate'] }} / 5</p>
+        {% endif %}
+
+        {# Жанры #}
+        <p><span class="lead">Жанры: </span>
+            {% for genre in book['db']['genres'].split(':') %}
+                {% if genre %}
+                    {{ genres_translation[genre] + ',' }}
+                {% endif %}
+            {% endfor %}
+        </p>
+
+        {# Язык #}
+        {% if book['db']['lang'] != -1 %}
+            <p><span class="lead">Язык: </span>{{ book['db']['lang'] }}</p>
+        {% endif %}
+
+        {# Ключевые слова #}
+        {% if book['db']['keywords'] != -1 %}
+            <p><span class="lead">Ключевые слова: </span>{{ book['db']['keywords'] }}</p>
+        {% endif %}
+
+        {# Скачать #}
+        <p><a download="{{ title }}.fb2.zip" id="download" href="#" class="btn btn-lg btn-primary"><span class="glyphicon glyphicon-download"></span> Скачать fb2 ({{ (book['db']['size'] | int) // 1024 }} Кб)</a></p>
+    </div>
+    <script>
+        {# Скачать #}
+        $('#download').attr('href', "data:application/x-zip-compressed-fb2;base64,{{ book['fb2']['book'] }}")
+
+        {# Обложка #}
+        {% if book['fb2']['image'] %}
+            {% if book['fb2']['imageMime'] %}
+                $('#cover').attr('src', "data:{{ book['fb2']['imageMime'] }};base64,{{ book['fb2']['image'] }}")
+            {% else %}
+                $('#cover').attr('src', "data:image/jpg;base64;{{ book['fb2']['image'] }}")
+            {% endif %}
+        {% endif %}
+    </script>
+</body>
+
+</html>

@@ -54,7 +54,9 @@
         <div class="panel-group">
             {% for book in result['result']%}
                 <div class="panel panel-default">
-                    <div class="panel-heading">{{book['title']}}</div>
+                    <div class="panel-heading">
+                        <a href="/book/{{ book['book_id'] }}" target="_blank">{{book['title']}}</a>
+                    </div>
                     <div class="panel-body">
                         <table class="table">
                             <tr>

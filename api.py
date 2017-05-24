@@ -2,21 +2,39 @@ from time import time
 from fb2reader import getBook as getFb2
 
 
-def getBook(conn, zippath, book_id=None, file_id=None):
-    if not file_id:
-        books = conn.execute(
-            'SELECT file FROM books WHERE book_id=?',
-            (book_id,)
-        ).fetchone()
-        if books:
-            file_id = books[0]
-        else:
-            return {
-                'ok': False,
-                'error': 'Book not found'
-            }
+def getBook(conn, zippath, book_id=None):
+    book = conn.execute(
+        '''
+        WITH sel_books AS (
+            SELECT b.*, s.name AS serie
+            FROM books b, series s
+            WHERE b.serie_id = s.serie_id
+        )
+        SELECT sel_books.*
+        FROM sel_books
+        WHERE book_id=?
+        ''',
+        (book_id,)
+    ).fetchone()
+    if book:
+        db_res = dict(zip(book.keys(), book))
+        file_id = db_res['file']
+    else:
+        return {
+            'ok': False,
+            'error': 'Book not found'
+        }
 
-    return getFb2(file_id, zippath)
+    fb2 = getFb2(file_id, zippath)
+
+    if fb2['ok']:
+        return {
+            'ok': fb2['ok'],
+            'fb2': fb2['result'],
+            'db': db_res
+        }
+    else:
+        return fb2
 
 
 def search(

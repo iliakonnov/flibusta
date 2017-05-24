@@ -89,13 +89,13 @@ def getBook(fileName, zipPath):
     else:
         publishInfo = None
 
-    fb2Name = bookId + '.fb2'
+    fb2Name = bookId
     if publishInfo:
         if publishInfo['bookName']:
             fb2Name = publishInfo['bookName']
     fb2Zip = BytesIO()
     with zipfile.ZipFile(fb2Zip, 'w', zipfile.ZIP_DEFLATED) as zipF:
-        zipF.writestr(zipfile.ZipInfo(filename=fb2Name), book)
+        zipF.writestr(zipfile.ZipInfo(filename=fb2Name + '.fb2'), book)
     fb2Zip.seek(0)
 
     return {

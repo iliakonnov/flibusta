@@ -20,6 +20,7 @@ PARAMS_TRANSLATION = {
         'lang': 'Язык'
     }
 
+
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
@@ -40,10 +41,9 @@ def close_connection(exception):
 @app.route('/api/get')
 def api_get():
     book_id = request.args.get('book_id', None)
-    file_id = request.args.get('file', None)
     encoding = request.args.get('encoding', 'base64')
 
-    book = api.getBook(get_db(), ZIPPATH, book_id, file_id)
+    book = api.getBook(get_db(), ZIPPATH, book_id)
 
     if encoding == 'base64':
         encoder = base64.b64encode
@@ -53,11 +53,14 @@ def api_get():
         return abort(400, 'Unknown encoding')
 
     if book['ok']:
-        if isinstance(book['result']['image'], bytes):
-            book['result']['image'] = encoder(book['result']['image']).decode('utf-8')
-        if isinstance(book['result']['book'], bytes):
-            book['result']['book'] = encoder(book['result']['book']).decode('utf-8')
-        return jsonify(book['result'])
+        if isinstance(book['fb2']['image'], bytes):
+            book['fb2']['image'] = encoder(book['fb2']['image']).decode('utf-8')
+        if isinstance(book['fb2']['book'], bytes):
+            book['fb2']['book'] = encoder(book['fb2']['book']).decode('utf-8')
+        return jsonify({
+            'db': book['db'],
+            'fb2': book['fb2']
+        })
     else:
         return abort(400, book['error'])
 
@@ -93,7 +96,19 @@ def api_search():
 
 @app.route('/book/<book_id>')
 def bookInfo(book_id):
-    pass
+    book = api.getBook(get_db(), ZIPPATH, book_id)
+    if book['ok']:
+        if isinstance(book['fb2']['image'], bytes):
+            book['fb2']['image'] = base64.b64encode(book['fb2']['image']).decode('utf-8')
+        if isinstance(book['fb2']['book'], bytes):
+            book['fb2']['book'] = base64.b64encode(book['fb2']['book']).decode('utf-8')
+        result = {
+            'db': book['db'],
+            'fb2': book['fb2']
+        }
+        return render_template('book.html', book=result, genres_translation=GENRES_TRANSLATION)
+    else:
+        return render_template('searchError.html')
 
 
 @app.route('/search')
