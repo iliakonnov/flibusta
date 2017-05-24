@@ -3,6 +3,7 @@
 import base64
 import sqlite3
 import api
+import time
 from flask import Flask, request, jsonify, abort, render_template, g
 
 app = Flask(__name__, static_url_path='/static/')
@@ -36,6 +37,12 @@ def close_connection(exception):
     db = getattr(g, '_database', None)
     if db is not None:
         db.close()
+
+
+@app.before_request
+def before_request():
+    g.request_start_time = time.time()
+    g.request_time = lambda: "%.5fs" % (time.time() - g.request_start_time)
 
 
 @app.route('/api/get')
