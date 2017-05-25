@@ -55,6 +55,15 @@
             <p><span class="lead">Описание: </span>{{ book['fb2']['annotation'] }}</p>
         {% endif %}
 
+        {# Авторы из БД #}
+        <p><span class="lead">Автор(ы): </span>
+        {% for author in book['db']['authors'].split(':') %}
+            {% if author %}
+                <a href="/search?author={{author}}">{{author.replace(',', ' ').rstrip(' ')}}</a>, 
+            {% endif %}
+        {% endfor %}
+        </p>
+
         {# Рейтинг #}
         {% if book['db']['rate'] != -1 %}
             <p><span class="lead">Рейтинг: </span>{{ book['db']['rate'] }} / 5</p>
@@ -64,7 +73,7 @@
         <p><span class="lead">Жанры: </span>
             {% for genre in book['db']['genres'].split(':') %}
                 {% if genre %}
-                    {{ genres_translation[genre] + ',' }}
+                    {{ genres_translation[genre] }}, 
                 {% endif %}
             {% endfor %}
         </p>

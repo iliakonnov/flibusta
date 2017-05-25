@@ -12,7 +12,13 @@
                     </tr>
                     <tr>
                         <td class="col-md-2">Авторы</td>
-                        <td>{{ book['authors'].replace(',', ' ').replace(':', ', ').rstrip(', ') }}</td>
+                        <td>
+                            {% for author in book['authors'].split(':') %}
+                                {% if author %}
+                                    <a href="/search?author={{author}}">{{author.replace(',', ' ').rstrip(' ')}}</a>, 
+                                {% endif %}
+                            {% endfor %}
+                        </td>
                     </tr>
                     {% if book['serie'] %}
                     <tr>
