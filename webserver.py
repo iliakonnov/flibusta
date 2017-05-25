@@ -51,7 +51,7 @@ def api_get():
     book_id = request.args.get('book_id', None)
     encoding = request.args.get('encoding', 'base64')
 
-    book = api.getBook(get_db(), ZIPPATH, book_id)
+    book = api.getBook(get_db(), app.config.get('zippath'), book_id)
 
     if encoding == 'base64':
         encoder = base64.b64encode
@@ -191,7 +191,7 @@ def serieInfo(serie_id):
 
 @app.route('/book/<book_id>')
 def bookInfo(book_id):
-    book = api.getBook(get_db(), ZIPPATH, book_id)
+    book = api.getBook(get_db(), app.config.get('zippath'), book_id)
     if book['ok']:
         if isinstance(book['fb2']['image'], bytes):
             book['fb2']['image'] = base64.b64encode(book['fb2']['image']).decode('utf-8')
@@ -269,5 +269,5 @@ def favicon():
 
 if __name__ == "__main__":
     from sys import argv
-    ZIPPATH = argv[1]
+    app.config['zippath'] = argv[1]
     app.run(host='0.0.0.0', debug=True)
