@@ -11,8 +11,12 @@
         <div class="error">
             <h1>Ошибка!</h1>
             <h2>Переданы неверные параметры запроса</h2>
+            {% if error %}
+                <p>{{error}}</p>
+            {% endif %}
         </div>
     </div>
+    {% include "footer.tpl" %}
 </body>
 
 </html>

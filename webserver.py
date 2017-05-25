@@ -112,6 +112,22 @@ def api_search():
         return abort(400)
 
 
+@app.route('/author/<author_id>')
+def authorInfo(author_id):
+    books = api.search(get_db(), author_id=author_id, order='title')
+    if books['ok']:
+        return render_template(
+            'list.html',
+            books=books['result'],
+            listName='Книги автора',
+            listData=books['result'][0]['authors']
+                .rstrip(':').replace(',', ' ').replace(':', ', ').rstrip(' '),
+            genres_translation=GENRES_TRANSLATION
+        )
+    else:
+        return render_template('searchError.html', error=books['error'])
+
+
 @app.route('/serie/<serie_id>')
 def serieInfo(serie_id):
     books = api.search(get_db(), serie_id=serie_id, order='serno')
@@ -120,10 +136,11 @@ def serieInfo(serie_id):
             'list.html',
             books=books['result'],
             listName='Серия',
+            listData=books['result'][0]['serie'],
             genres_translation=GENRES_TRANSLATION
         )
     else:
-        return books['error']
+        return render_template('searchError.html')
 
 
 @app.route('/book/<book_id>')
@@ -140,7 +157,7 @@ def bookInfo(book_id):
         }
         return render_template('book.html', book=result, genres_translation=GENRES_TRANSLATION)
     else:
-        return render_template('searchError.html')
+        return render_template('searchError.html', error=book['error'])
 
 
 @app.route('/search')
@@ -174,7 +191,7 @@ def search():
                 result=result
             )
         else:
-            return render_template('searchError.html')
+            render_template('searchError.html', error=result['error'])
     else:
         return render_template('searchError.html')
 

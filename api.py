@@ -3,27 +3,18 @@ from fb2reader import getBook as getFb2
 
 
 def getBook(conn, zippath, book_id=None):
-    book = conn.execute(
-        '''
-        WITH sel_books AS (
-            SELECT b.*, s.name AS serie
-            FROM books b, series s
-            WHERE b.serie_id = s.serie_id
-        )
-        SELECT sel_books.*
-        FROM sel_books
-        WHERE book_id=?
-        ''',
-        (book_id,)
-    ).fetchone()
-    if book:
-        db_res = dict(zip(book.keys(), book))
-        file_id = db_res['file']
+    book = search(conn, book_id=book_id)
+    if book['ok']:
+        if book['result']:
+            book = book['result'][0]
+            file_id = book['file']
+        else:
+            return {
+                'ok': False,
+                'error': 'Book not found'
+            }
     else:
-        return {
-            'ok': False,
-            'error': 'Book not found'
-        }
+        return book
 
     fb2 = getFb2(file_id, zippath)
 
@@ -31,7 +22,7 @@ def getBook(conn, zippath, book_id=None):
         return {
             'ok': fb2['ok'],
             'fb2': fb2['result'],
-            'db': db_res
+            'db': book
         }
     else:
         return fb2
@@ -95,7 +86,10 @@ def search(
         {limit}
     '''.format(
         book_id='AND b.book_id=:book_id' if book_id else '',
-        author_id='AND b.author_id=:author_id' if author_id else '',
+        author_id='''
+            AND b.book_id IN (
+                SELECT book_id FROM author_to_book WHERE author_id=:author_id
+            )''' if author_id else '',
         serie_id='AND b.serie_id=:serie_id' if serie_id else '',
         lang='AND b.lang=:lang' if lang else '',
         serno_a='AND b.serno<=:serno_max' if serno_max else '',

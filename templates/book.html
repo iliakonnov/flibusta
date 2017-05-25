@@ -9,7 +9,9 @@
     {% if 'publish_info' in book['fb2'] %}
         {% if book['fb2']['publish_info'] %}
             {% if 'bookName' in book['fb2']['publish_info'] %}
-                {% set title = book['fb2']['publish_info']['bookName'] %}}
+                {% if book['fb2']['publish_info']['bookName'] %}
+                    {% set title = book['fb2']['publish_info']['bookName'] %}}
+                {% endif %}
             {% endif %}
         {% endif %}
     {% endif %}
