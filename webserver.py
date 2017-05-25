@@ -155,14 +155,17 @@ def api_search():
 def authorInfo(author_id):
     books = api.search(get_db(), author_id=author_id, order='title')
     if books['ok']:
-        return render_template(
-            'list.html',
-            books=books['result'],
-            listName='Книги автора',
-            listData=books['result'][0]['authors']
-            .rstrip(':').replace(',', ' ').replace(':', ', ').rstrip(' '),
-            genres_translation=GENRES_TRANSLATION
-        )
+        authorName = api.getAuthorName(get_db(), author_id)
+        if authorName['ok']:
+            return render_template(
+                'list.html',
+                books=books['result'],
+                listName='Книги автора',
+                listData=authorName['result'].replace(',', ' ').rstrip(' '),
+                genres_translation=GENRES_TRANSLATION
+            )
+        else:
+            return render_template('searchError.html', error=authorName['error'])
     else:
         return render_template('searchError.html', error=books['error'])
 
@@ -171,15 +174,19 @@ def authorInfo(author_id):
 def serieInfo(serie_id):
     books = api.search(get_db(), serie_id=serie_id, order='serno')
     if books['ok']:
-        return render_template(
-            'list.html',
-            books=books['result'],
-            listName='Серия',
-            listData=books['result'][0]['serie'],
-            genres_translation=GENRES_TRANSLATION
-        )
+        serieName = api.getSerieName(get_db(), serie_id)
+        if serieName['ok']:
+            return render_template(
+                'list.html',
+                books=books['result'],
+                listName='Серия',
+                listData=serieName['result'],
+                genres_translation=GENRES_TRANSLATION
+            )
+        else:
+            return render_template('searchError.html', error=serieName['error'])
     else:
-        return render_template('searchError.html')
+        return render_template('searchError.html', error=books['error'])
 
 
 @app.route('/book/<book_id>')
