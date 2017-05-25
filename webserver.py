@@ -76,8 +76,36 @@ def api_get():
 @app.route('/api/getAuthors')
 def api_getAuthors():
     book_id = request.args.get('book_id', None)
+    if not book_id:
+        return abort(400)
 
     result = api.getAuthors(get_db(), book_id)
+    if result['ok']:
+        return jsonify(result['result'])
+    else:
+        return abort(400, result['error'])
+
+
+@app.route('/api/getAuthorName')
+def api_getAuthorName():
+    author_id = request.args.get('author_id', None)
+    if not author_id:
+        return abort(400)
+
+    result = api.getAuthorName(get_db(), author_id)
+    if result['ok']:
+        return jsonify(result['result'])
+    else:
+        return abort(400, result['error'])
+
+
+@app.route('/api/getSerieName')
+def api_getSerieName():
+    serie_id = request.args.get('serie_id', None)
+    if not serie_id:
+        return abort(400)
+
+    result = api.getSerieName(get_db(), serie_id)
     if result['ok']:
         return jsonify(result['result'])
     else:

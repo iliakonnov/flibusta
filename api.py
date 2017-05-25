@@ -46,6 +46,34 @@ def getAuthors(conn, book_id):
         }
 
 
+def getAuthorName(conn, author_id):
+    result = conn.execute('SELECT name FROM authors WHERE author_id=?', (author_id, )).fetchone()
+    if result:
+        return {
+            'ok': True,
+            'result': result[0]
+        }
+    else:
+        return {
+            'ok': False,
+            'error': 'Author not found'
+        }
+
+
+def getSerieName(conn, serie_id):
+    result = conn.execute('SELECT name FROM series WHERE serie_id=?', (serie_id, )).fetchone()
+    if result:
+        return {
+            'ok': True,
+            'result': result[0]
+        }
+    else:
+        return {
+            'ok': False,
+            'error': 'Serie not found'
+        }
+
+
 def search(
         conn,
         book_id=None, author_id=None, serie_id=None, order=None,
