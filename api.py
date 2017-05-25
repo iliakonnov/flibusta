@@ -39,11 +39,20 @@ def getBook(conn, zippath, book_id=None):
 
 def search(
         conn,
-        book_id=None, author_id=None, serie_id=None,
+        book_id=None, author_id=None, serie_id=None, order=None,
         start=0, count=0, author=None, title=None, serie=None, genre=None,
         serno_min=None, serno_max=None, rate_min=None, rate_max=None, lang=None
 ):
     startTime = time()
+
+    if not order and (count or start):
+        order = 'ORDER BY b.book_id'
+    elif not order:
+        order = ''
+    elif order in ['book_id', 'author_id', 'serie_id', 'rate', 'size', 'serno', 'title', 'authors']:
+        order = 'ORDER BY b.' + order
+    else:
+        return {'ok': False, 'error': 'Unknown order'}
 
     params = {
         'limit': start + count if count else None,
@@ -119,7 +128,7 @@ def search(
                 WHERE g.genre_id = b.genre_id
                     AND name=:genre
             )''' if genre else '',
-        order='ORDER BY b.book_id' if count or start else '',
+        order=order,
         limit='LIMIT :limit' if count else ''
     )
     result = conn.execute(sql, parameters)
@@ -138,6 +147,7 @@ def search(
 
     endTime = time()
     return {
+        'ok': True,
         'result': response,
         'parameters': parameters,
         'time': {
