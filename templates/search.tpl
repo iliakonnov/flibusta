@@ -32,24 +32,30 @@
                 </select>
             </div>
             <div class="list-group-item">
-                <div class="list-group-horizontal">
-                    <div class="list-group-item">
-                        <input type="number" name="serno_min" min="-1" class="form-control input-lg" placeholder="Минимальный номер книги в серии (включительно)" />
-                    </div>
-                    <div class="list-group-item">
-                        <input type="number" name="serno_max" min="-1" class="form-control input-lg" placeholder="Максимальный номер книги в серии (включительно)" />
-                    </div>
-                </div>
+                <table class="table table-condensed searchTable"><tr>
+                    <td class="smallTd">
+                        <input type="number" name="serno_min" min="-1" class="form-control input-lg" placeholder="min" />
+                    </td>
+                    <td class="bigTd">
+                        <p class="lead text-nowrap text-center">&ge; номер в серии &ge;</p>
+                    </td>
+                    <td class="smallTd">
+                        <input type="number" name="serno_max" min="-1" class="form-control input-lg" placeholder="max" />
+                    </td>
+                </tr></table>
             </div>
             <div class="list-group-item">
-                <div class="list-group-horizontal">
-                    <div class="list-group-item">
-                        <input type="number" name="rate_min" min="-1" max="5" class="form-control input-lg" placeholder="Минимальный рейтинг книги" />
-                    </div>
-                    <div class="list-group-item">
-                        <input type="number" name="rate_max" min="-1" max="5" class="form-control input-lg" placeholder="Максимальный рейтинг книги" />
-                    </div>
-                </div>
+                <table class="table table-condensed searchTable"><tr>
+                    <td class="smallTd">
+                        <input type="number" name="rate_min" min="-1" class="form-control input-lg" placeholder="min" />
+                    </td>
+                    <td class="bigTd">
+                        <p class="lead text-nowrap text-center">&ge; рейтинг &ge;</p>
+                    </td>
+                    <td class="smallTd">
+                        <input type="number" name="rate_max" min="-1" class="form-control input-lg" placeholder="max" />
+                    </td>
+                </tr></table>
             </div>
             <div class="list-group-item">
                 <select id="languages" type="text" name="lang" class="form-control input-lg">

@@ -7,24 +7,17 @@
     justify-content: center;
 }
 
-.list-group-horizontal .list-group-item {
-    display: inline-block;
-    width: 50%;
+.searchTable {
+    margin-bottom: 0 !important;
 }
-.list-group-horizontal .list-group-item {
-    margin-bottom: 0;
-    margin-left:-4px;
-    margin-right: 0;
-    border-right-width: 0;
+.searchTable td, .searchTable th {
+    border: none !important;
 }
-.list-group-horizontal .list-group-item:first-child {
-    border-top-right-radius:0;
-    border-bottom-left-radius:4px;
+.searchTable .bigTd {
+    width: 50%
 }
-.list-group-horizontal .list-group-item:last-child {
-    border-top-right-radius:4px;
-    border-bottom-left-radius:0;
-    border-right-width: 1px;
+.searchTable .smallTd {
+    width: 25%
 }
 
 .error {
