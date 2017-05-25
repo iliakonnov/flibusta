@@ -13,11 +13,14 @@
                     <tr>
                         <td class="col-md-2">Авторы</td>
                         <td>
-                            {% for author in book['authors'].split(':') %}
-                                {% if author %}
-                                    <a href="/search?author={{author}}">{{author.replace(',', ' ').rstrip(' ')}}</a>, 
-                                {% endif %}
-                            {% endfor %}
+                            {% set authors=book['authors'].split(':') %}
+                                {% for author in authors[:-1] %}
+                                    {% if author %}
+                                        <a href="/search?author={{author}}">{{author.replace(',', ' ').rstrip(' ')}}</a>, 
+                                    {% endif %}
+                                {% endfor %}
+                                {{ authors[-1].replace(',', ' ').rstrip(' ') }}
+                            {# {% endset %} #}
                         </td>
                     </tr>
                     {% if book['serie'] %}
@@ -29,11 +32,14 @@
                     <tr>
                         <td class="col-md-2">Жанры</td>
                         <td>
-                            {% for genre in book['genres'].split(':') %}
-                                {% if genre %}
-                                    {{ genres_translation[genre] + ',' }}
-                                {% endif %}
-                            {% endfor %}
+                            {% set genres=book['genres'].split(':') %}
+                                {% for genre in genres[:-1] %}
+                                    {% if genre %}
+                                        {{ genres_translation[genre] }}, 
+                                    {% endif %}
+                                {% endfor %}
+                                {{ genres_translation[genres[-1]] }}
+                            {# {% endset %} #}
                         </td>
                     </tr>
                     {% if book['rate'] != -1 %}

@@ -73,6 +73,17 @@ def api_get():
         return abort(400, book['error'])
 
 
+@app.route('/api/getAuthors')
+def api_getAuthors():
+    book_id = request.args.get('book_id', None)
+
+    result = api.getAuthors(get_db(), book_id)
+    if result['ok']:
+        return jsonify(result['result'])
+    else:
+        return abort(400, result['error'])
+
+
 @app.route('/api/search')
 def api_search():
     book_id = request.args.get('book_id', None)
@@ -121,7 +132,7 @@ def authorInfo(author_id):
             books=books['result'],
             listName='Книги автора',
             listData=books['result'][0]['authors']
-                .rstrip(':').replace(',', ' ').replace(':', ', ').rstrip(' '),
+            .rstrip(':').replace(',', ' ').replace(':', ', ').rstrip(' '),
             genres_translation=GENRES_TRANSLATION
         )
     else:
@@ -155,7 +166,12 @@ def bookInfo(book_id):
             'db': book['db'],
             'fb2': book['fb2']
         }
-        return render_template('book.html', book=result, genres_translation=GENRES_TRANSLATION)
+        return render_template(
+            'book.html',
+            book=result,
+            genres_translation=GENRES_TRANSLATION,
+            authors=api.getAuthors(get_db(), result['db']['book_id'])['result']
+        )
     else:
         return render_template('searchError.html', error=book['error'])
 

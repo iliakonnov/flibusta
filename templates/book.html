@@ -59,11 +59,10 @@
 
         {# Авторы из БД #}
         <p><span class="lead">Автор(ы): </span>
-        {% for author in book['db']['authors'].split(':') %}
-            {% if author %}
-                <a href="/search?author={{author}}">{{author.replace(',', ' ').rstrip(' ')}}</a>, 
-            {% endif %}
+        {% for author in authors[:-1] %}
+            <a href="/author/{{author['author_id']}}">{{author['name'].replace(',', ' ').rstrip(' ')}}</a>, 
         {% endfor %}
+        <a href="/author/{{authors[-1]['author_id']}}">{{authors[-1]['name'].replace(',', ' ').rstrip(' ')}}</a>
         </p>
 
         {# Рейтинг #}
@@ -73,11 +72,14 @@
 
         {# Жанры #}
         <p><span class="lead">Жанры: </span>
-            {% for genre in book['db']['genres'].split(':') %}
-                {% if genre %}
-                    {{ genres_translation[genre] }}, 
-                {% endif %}
-            {% endfor %}
+            {% set genres=book['db']['genres'].split(':') %}
+                {% for genre in genres[:-1] %}
+                    {% if genre %}
+                        {{ genres_translation[genre] }}, 
+                    {% endif %}
+                {% endfor %}
+                {{ genres_translation[genres[-1]] }}
+            {# {% endset %} #}
         </p>
 
         {# Язык #}

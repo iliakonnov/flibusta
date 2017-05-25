@@ -28,6 +28,24 @@ def getBook(conn, zippath, book_id=None):
         return fb2
 
 
+def getAuthors(conn, book_id):
+    result = conn.execute('''
+        SELECT author_id, name FROM authors WHERE author_id IN (
+            SELECT author_id FROM author_to_book WHERE book_id=?
+        );
+    ''', (book_id, ))
+    if result:
+        return {
+            'ok': True,
+            'result': [dict(zip(row.keys(), row)) for row in result]
+        }
+    else:
+        return {
+            'ok': False,
+            'error': 'Book or author not found'
+        }
+
+
 def search(
         conn,
         book_id=None, author_id=None, serie_id=None, order=None,
@@ -66,7 +84,6 @@ def search(
         if value:
             parameters[key] = value
 
-    sqlTime = time()
     sql = '''
         SELECT b.*, s.name AS serie
         FROM books b, series s
@@ -125,6 +142,7 @@ def search(
         order=order,
         limit='LIMIT :limit' if count else ''
     )
+    sqlTime = time()
     result = conn.execute(sql, parameters)
     sqlEnd = time()
 
