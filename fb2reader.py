@@ -95,14 +95,16 @@ def getBook(fileName, zipPath):
             fb2Name = publishInfo['bookName']
     fb2Zip = BytesIO()
     with zipfile.ZipFile(fb2Zip, 'w', zipfile.ZIP_DEFLATED) as zipF:
-        zipF.writestr(zipfile.ZipInfo(filename=fb2Name + '.fb2'), book)
+        zipF.writestr(zipfile.ZipInfo(filename=fb2Name + '.fb2'), book, zipfile.ZIP_DEFLATED)
     fb2Zip.seek(0)
+    fb2ZipData = fb2Zip.read()
 
     return {
         'ok': True,
         'result': {
             'bookId': bookId,
-            'book': fb2Zip.read(),
+            'book': fb2ZipData,
+            'zipSize': len(fb2ZipData),
             'image': image,
             'imageMime': imageMime,
             'annotation': annotation,

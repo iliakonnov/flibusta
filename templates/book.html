@@ -93,7 +93,7 @@
         {% endif %}
 
         {# Скачать #}
-        <p><a id="download" href="#{{ title }}.fb2.zip" class="btn btn-lg btn-primary"><span class="glyphicon glyphicon-download"></span> Скачать fb2 ({{ (book['db']['size'] | int) // 1024 }} Кб)</a></p>
+        <p><a id="download" href="#{{ title }}.fb2.zip" class="btn btn-lg btn-primary"><span class="glyphicon glyphicon-download"></span> Скачать fb2 ({{ (book['fb2']['zipSize'] | int) // 1024 }} Кб)</a></p>
     </div>
     <script type="text/javascript">
         {# Обложка #}
