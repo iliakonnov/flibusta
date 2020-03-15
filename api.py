@@ -82,14 +82,16 @@ def search(
 ):
     startTime = time()
 
+    order_new = 'ORDER BY b.deleted ASC'
     if not order and (count or start):
-        order = 'ORDER BY b.book_id'
+        order_new += ', b.book_id'
     elif not order:
-        order = ''
+        order_new += ''
     elif order in ['book_id', 'author_id', 'serie_id', 'rate', 'size', 'serno', 'title', 'authors']:
-        order = 'ORDER BY b.' + order
+        order_new += ', b.' + order
     else:
         return {'ok': False, 'error': 'Unknown order'}
+    order = order_new
 
     params = {
         'limit': start + count if count else None,

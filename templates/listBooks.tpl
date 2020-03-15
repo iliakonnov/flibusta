@@ -2,13 +2,17 @@
     {% for book in books %}
         <div class="panel panel-default">
             <div class="panel-heading">
+                {% if book['deleted'] %}<s>{% endif %}
                 <a href="/book/{{ book['book_id'] }}" target="_blank">{{book['title']}}</a>
+                {% if book['deleted'] %}</s>{% endif %}
             </div>
             <div class="panel-body">
                 <table class="table">
                     <tr>
                         <td class="col-md-2">Название</td>
-                        <td>{{ book['title'] }}</td>
+                        <td>
+                            {{ book['title'] }}
+			</td>
                     </tr>
                     <tr>
                         <td class="col-md-2">Авторы</td>

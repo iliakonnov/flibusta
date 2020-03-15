@@ -28,6 +28,7 @@ def initDb(conn: sqlite3.Connection):
         keywords TEXT,
         authors TEXT,
         genres TEXT,
+        deleted INTEGER,
         FOREIGN KEY(serie_id) REFERENCES series(serie_id)
     );
 
@@ -74,7 +75,8 @@ def initDb(conn: sqlite3.Connection):
         rate INTEGER,
         keywords TEXT,
         authors TEXT,
-        genres TEXT
+        genres TEXT,
+        deleted INTEGER
     );
 
     CREATE TABLE authors_temp (
@@ -180,7 +182,7 @@ def addBooks(
         for first in iterator:
             yield chain([first], islice(iterator, size - 1))
 
-    chunkSize = 500000
+    chunkSize = 250000
 
     print('Adding series...')
     serNum = 0
@@ -258,7 +260,8 @@ def addBooks(
                 'rate': i['librate'],
                 'keywords': i['keywords'],
                 'authors': i['author'],
-                'genres': i['genre']
+                'genres': i['genre'],
+                'deleted': i['del']
             }
     for i in chunks(booksIter(), chunkSize):
         startTime = time.time()
@@ -275,7 +278,8 @@ def addBooks(
                 :rate,
                 :keywords,
                 :authors,
-                :genres
+                :genres,
+                :deleted
             )
         ''', i)
         conn.commit()

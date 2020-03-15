@@ -270,4 +270,5 @@ def favicon():
 if __name__ == "__main__":
     from sys import argv
     app.config['zippath'] = argv[1]
+    app.config['dbpath'] = argv[2] if len(argv) > 2 else 'data/flibusta.sqlite'
     app.run(host='0.0.0.0', debug=True)
