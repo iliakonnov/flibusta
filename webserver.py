@@ -26,7 +26,7 @@ PARAMS_TRANSLATION = {
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
-        conn = sqlite3.connect('flibusta.sqlite')
+        conn = sqlite3.connect(app.config.get('dbpath'))
         conn.row_factory = sqlite3.Row
 
         db = g._database = conn

@@ -180,7 +180,7 @@ def addBooks(
         for first in iterator:
             yield chain([first], islice(iterator, size - 1))
 
-    chunkSize = 500
+    chunkSize = 500000
 
     print('Adding series...')
     serNum = 0
@@ -348,7 +348,7 @@ def searchBooks(files):
                     'genre': splitted[1],
                     'title': splitted[2],
                     'series': splitted[3],
-                    'serno': int(splitted[4]) if splitted[4] else -1,
+                    'serno': int(splitted[4]) if splitted[4] and splitted[4].isnumeric() else -1,
                     'file': impFile + '/' + splitted[5],
                     'size': int(splitted[6]),
                     'lib_id': splitted[7],
