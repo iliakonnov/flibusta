@@ -14,11 +14,11 @@
             </div>
         </div>
         <div class="list-group-item">
-            <button id="showAdvanced" class="btn btn-sm" type="button">
+            <button id="showAdvanced" class="btn btn-sm" type="button" data-toggle="collapse" data-target="#advanced" aria-expanded="false" aria-controls="collapseExample">
                 <span>Расширенный поиск</span>
             </button>
         </div>
-        <div id="advanced" style="display: none;">
+        <div id="advanced" class="collapse">
             <div class="list-group-item">
                 <input type="text" name="author" class="form-control input-lg" placeholder="Имя автора" />
             </div>
@@ -30,19 +30,6 @@
                     <option value="" selected>Жанр книги</option>
                     <!-- Тут должны быть жанры, которые заполняет js на основе словаря-->
                 </select>
-            </div>
-            <div class="list-group-item">
-                <table class="table table-condensed searchTable"><tr>
-                    <td class="smallTd">
-                        <input type="number" name="serno_min" min="-1" class="form-control input-lg" placeholder="min" />
-                    </td>
-                    <td class="bigTd">
-                        <p class="lead text-nowrap text-center">&ge; номер в серии &ge;</p>
-                    </td>
-                    <td class="smallTd">
-                        <input type="number" name="serno_max" min="-1" class="form-control input-lg" placeholder="max" />
-                    </td>
-                </tr></table>
             </div>
             <div class="list-group-item">
                 <table class="table table-condensed searchTable"><tr>

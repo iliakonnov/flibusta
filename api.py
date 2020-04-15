@@ -20,7 +20,7 @@ def getBook(conn, zippath, book_id=None):
 
     if fb2['ok']:
         return {
-            'ok': fb2['ok'],
+            'ok': True,
             'fb2': fb2['result'],
             'db': book
         }
@@ -74,11 +74,25 @@ def getSerieName(conn, serie_id):
         }
 
 
+def split_ids(joined, mapper):
+    if not joined:
+        return []
+    result = []
+    for i in joined.split('$$$'):
+        splitted = i.split('###')
+        if len(splitted) != len(mapper):
+            raise Exception('Invalid pair={!r} with mapper={!r}'.format(i, mapper))
+        result.append(dict((
+            (i[1], i[0](splitted[n])) for n, i in enumerate(mapper)
+        )))
+    return result
+
+
 def search(
         conn,
-        book_id=None, author_id=None, serie_id=None, order=None,
-        start=0, count=0, author=None, title=None, serie=None, genre=None,
-        serno_min=None, serno_max=None, rate_min=None, rate_max=None, lang=None
+        book_id=None, author_id=None, serie_id=None, genre_id=None, keyword_id=None, order=None,
+        start=0, count=0, author=None, title=None, serie=None, genre=None, keyword=None,
+        rate_min=None, rate_max=None, lang=None
 ):
     startTime = time()
 
@@ -87,27 +101,39 @@ def search(
         order_new += ', b.book_id'
     elif not order:
         order_new += ''
-    elif order in ['book_id', 'author_id', 'serie_id', 'rate', 'size', 'serno', 'title', 'authors']:
+    elif order in ['book_id', 'rate', 'size', 'title']:
         order_new += ', b.' + order
+    elif order == 'serno':
+        if serie_id is None:
+            return {'ok': False, 'error': 'serie_id not specified. Unable to order by serno'}
+        order_new += ''', (
+             SELECT serno
+             FROM serie_to_book sb
+             WHERE sb.serie_id = :serie_id
+               AND sb.book_id = b.book_id
+        )
+        '''
     else:
         return {'ok': False, 'error': 'Unknown order'}
-    order = order_new
 
     params = {
-        'limit': start + count if count else None,
+        'count': start + count if count else None,
         'book_id': book_id,
         'author_id': author_id,
         'serie_id': serie_id,
+        'genre_id': genre_id,
+        'keyword_id': keyword_id,
         'lang': lang,
-        'serno_max': serno_max,
-        'serno_min': serno_min,
         'rate_max': rate_max,
         'rate_min': rate_min,
         'title': title,
         'serie': serie,
         'author': author,
-        'genre': genre
+        'order': order,
+        'genre': genre,
+        'keyword': keyword,
     }
+    order = order_new
 
     parameters = {}
     for key, value in params.items():
@@ -115,20 +141,22 @@ def search(
             parameters[key] = value
 
     sql = '''
-        SELECT b.*, s.name AS serie
-        FROM books b, series s
-        WHERE b.serie_id = s.serie_id
+        SELECT b.*
+        FROM books b
+        WHERE 1
         {book_id}
         {author_id}
         {serie_id}
+        {genre_id}
+        {keyword_id}
 
         {lang}
-        {serno_a} {serno_b}
         {rate_a} {rate_b}
         {title}
         {serie}
         {author}
         {genre}
+        {keyword}
         {order}
         {limit}
     '''.format(
@@ -137,10 +165,28 @@ def search(
             AND b.book_id IN (
                 SELECT book_id FROM author_to_book WHERE author_id=:author_id
             )''' if author_id else '',
-        serie_id='AND b.serie_id=:serie_id' if serie_id else '',
+        serie_id='''
+            AND b.book_id IN (
+                SELECT s.book_id
+                FROM serie_to_book s
+                WHERE s.serie_id = :serie_id
+            )
+        ''' if serie_id else '',
+        genre_id='''
+            AND b.book_id IN (
+                SELECT g.book_id
+                FROM genre_to_book g
+                WHERE g.genre_id = :genre_id
+            )
+        ''' if genre_id else '',
+        keyword_id='''
+            AND b.book_id IN (
+                SELECT kw.book_id
+                FROM keyword_to_book kw
+                WHERE kw.keyword_id = :keyword_id
+            )
+        ''' if keyword_id else '',
         lang='AND b.lang=:lang' if lang else '',
-        serno_a='AND b.serno<=:serno_max' if serno_max else '',
-        serno_b='AND b.serno>=:serno_min' if serno_min else '',
         rate_a='AND b.rate<=:rate_max' if rate_max else '',
         rate_b='AND b.rate>=:rate_min' if rate_min else '',
         title='''
@@ -148,8 +194,15 @@ def search(
                 SELECT title FROM titles_fts WHERE title MATCH :title
             )''' if title else '',
         serie='''
-            AND s.name IN (
-                SELECT name FROM series_fts WHERE name MATCH :serie
+            AND b.book_id IN (
+                SELECT b.book_id
+                FROM series s, serie_to_book b
+                WHERE s.serie_id = b.serie_id
+                    AND s.name IN (
+                        SELECT name
+                        FROM series_fts
+                        WHERE name MATCH :serie
+                    )
             )''' if serie else '',
         author='''
             AND b.book_id IN (
@@ -167,10 +220,17 @@ def search(
                 SELECT b.book_id
                 FROM genres g, genre_to_book b
                 WHERE g.genre_id = b.genre_id
-                    AND name=:genre
+                    AND g.name=:genre
             )''' if genre else '',
+        keyword='''
+            AND b.book_id IN (
+                SELECT b.book_id
+                FROM keywords kw, keyword_to_book b
+                WHERE kw.keyword_id = b.keyword_id
+                    AND kw.name=:keyword
+            )''' if keyword else '',
         order=order,
-        limit='LIMIT :limit' if count else ''
+        limit='LIMIT :count' if count else ''
     )
     sqlTime = time()
     result = conn.execute(sql, parameters)
@@ -186,6 +246,11 @@ def search(
     else:
         for row in result:
             response.append(dict(zip(row.keys(), row)))
+    for i in response:
+        i['authors'] = split_ids(i['authors'], ((int, 'id'), (str, 'name')))
+        i['series'] = split_ids(i['series'], ((int, 'id'), (str, 'name'), (int, 'serno')))
+        i['genres'] = split_ids(i['genres'], ((int, 'id'), (str, 'name')))
+        i['keywords'] = split_ids(i['keywords'], ((int, 'id'), (str, 'name')))
 
     endTime = time()
     return {
@@ -197,5 +262,5 @@ def search(
             'sql': (sqlEnd - sqlTime) * 1000,
             'processing': (endTime - sqlEnd) * 1000
         },
-        # 'sql': sql
+        'sql': sql
     }

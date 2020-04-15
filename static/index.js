@@ -1,10 +1,3 @@
-$('#showAdvanced').click(function(){
-    if ($('#advanced').is(':visible'))
-        $('#advanced').hide()
-    else
-        $('#advanced').show()
-});
-
 function checkText(text){
     for (var i = 0; i < text.length; i++) {
         if (text[i] != '^' && text[i] != '*')

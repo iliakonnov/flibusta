@@ -15,26 +15,42 @@ def initDb(conn: sqlite3.Connection):
         name TEXT UNIQUE
     );
 
+    CREATE TABLE serie_to_book (
+        book_id INTEGER,
+        serie_id INTEGER,
+        serno INTEGER,
+        PRIMARY KEY(book_id, serie_id),
+        FOREIGN KEY(book_id) REFERENCES books(book_id) ON DELETE CASCADE,
+        FOREIGN KEY(serie_id) REFERENCES series(serie_id) ON DELETE CASCADE
+    );
+
     CREATE TABLE books (
         book_id INTEGER PRIMARY KEY,
         title TEXT,
-        serie_id INTEGER,
-        serno INTEGER,
+        title_alt TEXT,
         size INTEGER,
         file TEXT,
         add_date DATE,
         lang TEXT,
         rate INTEGER,
         keywords TEXT,
-        authors TEXT,
-        genres TEXT,
         deleted INTEGER,
-        FOREIGN KEY(serie_id) REFERENCES series(serie_id)
+        joined_into INTEGER,
+        
+        authors TEXT,
+        series TEXT,
+        genres TEXT,
+
+        FOREIGN KEY(joined_into) REFERENCES books(book_id)
     );
 
     CREATE TABLE authors (
         author_id INTEGER PRIMARY KEY,
-        name TEXT UNIQUE
+        first_name TEXT,
+        middle_name TEXT,
+        last_name TEXT,
+        nickname TEXT,
+        name TEXT
     );
 
     CREATE TABLE author_to_book (
@@ -57,31 +73,50 @@ def initDb(conn: sqlite3.Connection):
         FOREIGN KEY(book_id) REFERENCES books(book_id) ON DELETE CASCADE,
         FOREIGN KEY(genre_id) REFERENCES genres(genre_id) ON DELETE CASCADE
     );
+    
+    CREATE TABLE keywords (
+        keyword_id INTEGER PRIMARY KEY,
+        name TEXT UNIQUE
+    );
+
+    CREATE TABLE keyword_to_book (
+        book_id INTEGER,
+        keyword_id INTEGER,
+        PRIMARY KEY(book_id, keyword_id),
+        FOREIGN KEY(book_id) REFERENCES books(book_id) ON DELETE CASCADE,
+        FOREIGN KEY(keyword_id) REFERENCES keywords(keyword_id) ON DELETE CASCADE
+    );
 
     CREATE TABLE series_temp (
         serie_id INTEGER,
         name TEXT
     );
 
+    CREATE TABLE serie_to_book_temp (
+        book_id INTEGER,
+        serie_id INTEGER,
+        serno INTEGER
+    );
+
     CREATE TABLE books_temp (
         book_id INTEGER,
         title TEXT,
-        serie_id INTEGER,
-        serno INTEGER,
+        title_alt TEXT,
         size INTEGER,
         file TEXT,
         add_date DATE,
         lang TEXT,
         rate INTEGER,
-        keywords TEXT,
-        authors TEXT,
-        genres TEXT,
-        deleted INTEGER
+        deleted INTEGER,
+        joined_into INTEGER
     );
 
     CREATE TABLE authors_temp (
         author_id INTEGER,
-        name TEXT
+        first_name TEXT,
+        middle_name TEXT,
+        last_name TEXT,
+        nickname TEXT
     );
 
     CREATE TABLE author_to_book_temp (
@@ -98,13 +133,24 @@ def initDb(conn: sqlite3.Connection):
         book_id INTEGER,
         genre_id INTEGER
     );
+    
+    CREATE TABLE keywords_temp (
+        keyword_id INTEGER PRIMARY KEY,
+        name TEXT UNIQUE
+    );
+
+    CREATE TABLE keyword_to_book_temp (
+        book_id INTEGER,
+        keyword_id INTEGER
+    );
     ''')
     conn.commit()
 
 
 def doneDb(conn: sqlite3.Connection):
     print('Creating indexes and FTS...')
-    conn.executescript('''
+    sql = '''
+        -- Removing duplicates
         CREATE INDEX idx_xxx_id ON books_temp(book_id);
         DELETE FROM books_temp
         WHERE rowid NOT IN(SELECT MAX(rowid)
@@ -123,48 +169,123 @@ def doneDb(conn: sqlite3.Connection):
                    FROM author_to_book_temp
                    GROUP BY book_id, author_id);
 
+        CREATE INDEX idx_xx4_id ON serie_to_book_temp(book_id, serie_id);
+        DELETE FROM serie_to_book_temp
+        WHERE rowid NOT IN(SELECT MAX(rowid)
+                   FROM serie_to_book_temp
+                   GROUP BY book_id, serie_id);
+
+        CREATE INDEX idx_xx5_id ON keyword_to_book_temp(book_id, keyword_id);
+        DELETE FROM keyword_to_book_temp
+        WHERE rowid NOT IN(SELECT MAX(rowid)
+                   FROM keyword_to_book_temp
+                   GROUP BY book_id, keyword_id);
+
         INSERT INTO series SELECT * FROM series_temp;
         INSERT INTO genres SELECT * FROM genres_temp;
-        INSERT INTO authors SELECT * FROM authors_temp;
-        INSERT INTO books SELECT * FROM books_temp;
+        INSERT INTO authors
+        SELECT
+            a.*,
+            (a.first_name || ' ' || a.middle_name || ' ' || a.last_name || ' ' || a.nickname) as name 
+        FROM authors_temp a;
+        INSERT INTO keywords SELECT * FROM keywords_temp;
 
         INSERT INTO genre_to_book SELECT * FROM genre_to_book_temp;
         INSERT INTO author_to_book SELECT * FROM author_to_book_temp;
+        INSERT INTO serie_to_book SELECT * FROM serie_to_book_temp;
+        INSERT INTO keyword_to_book SELECT * FROM keyword_to_book_temp;
 
         PRAGMA foreign_keys = ON;
-        DELETE FROM authors WHERE name = '';
+        DELETE FROM authors WHERE name = '' OR name = '   ';
         DELETE FROM genres WHERE name = '';
+        DELETE FROM series WHERE name = '';
+        DELETE FROM keywords WHERE name = '';
 
-        --CREATE INDEX books_id_idx ON books(book_id);
-
-        --CREATE INDEX series_id_idx ON series(serie_id);
-        --CREATE INDEX series_name_idx ON series(name);
-        CREATE INDEX books_serie_idx ON books(serie_id);
-        CREATE INDEX books_title_idx ON books(title);
+        CREATE INDEX serieBook_book_idx ON serie_to_book(book_id);
+        CREATE INDEX serieBook_serie_idx ON serie_to_book(serie_id);
         CREATE VIRTUAL TABLE series_fts USING fts4(name, tokenize=unicode61);
         INSERT INTO series_fts SELECT name FROM series;
-        CREATE VIRTUAL TABLE titles_fts USING fts4(title, tokenize=unicode61);
-        INSERT INTO titles_fts SELECT title FROM books;
 
-        --CREATE INDEX authors_id_idx ON authors(author_id);
-        --CREATE INDEX authors_name_idx ON authors(name);
         CREATE INDEX authorBook_book_idx ON author_to_book(book_id);
         CREATE INDEX authorBook_author_idx ON author_to_book(author_id);
         CREATE VIRTUAL TABLE authors_fts USING fts4(name, tokenize=unicode61);
         INSERT INTO authors_fts SELECT name FROM authors;
 
-        --CREATE INDEX genres_id_idx ON genres(genre_id);
-        --CREATE INDEX genres_name_idx ON genres(name);
         CREATE INDEX genreBook_book_idx ON genre_to_book(book_id);
-        CREATE INDEX genreBook_author_idx ON genre_to_book(genre_id);
+        CREATE INDEX genreBook_genre_idx ON genre_to_book(genre_id);
+        
+        CREATE INDEX keywordBook_book_idx ON keyword_to_book(book_id);
+        CREATE INDEX keywordBook_keyword_idx ON keyword_to_book(keyword_id);
+        CREATE VIRTUAL TABLE keywords_fts USING fts4(name, tokenize=unicode61);
+        INSERT INTO keywords_fts SELECT name FROM keywords;
+        
+        INSERT INTO books
+        SELECT b.*,
+            NULL as authors,
+            NULL as series,
+            NULL AS genres,
+            NULL as keywords
+        FROM books_temp b;
 
-        DROP TABLE author_to_book_temp;
-        DROP TABLE books_temp;
-        DROP TABLE genre_to_book_temp;
-        DROP TABLE genres_temp;
-        DROP TABLE series_temp;
-        DROP TABLE authors_temp;
-    ''')
+        UPDATE books
+        SET authors = (
+            SELECT group_concat(a.author_id || '###' || a.name, '$$$')
+            FROM authors a,
+                 author_to_book ab
+            WHERE a.author_id = ab.author_id
+              AND books.book_id = ab.book_id
+        );
+
+        UPDATE books
+        SET series = (
+            SELECT group_concat(s.serie_id || '###' || s.name || '###' || sb.serno, '$$$')
+            FROM series s,
+                 serie_to_book sb
+            WHERE s.serie_id = sb.serie_id
+              AND books.book_id = sb.book_id
+        );
+        
+        UPDATE books
+        SET genres = (
+            SELECT group_concat(g.genre_id || '###' || g.name, '$$$')
+            FROM genres g,
+                 genre_to_book gb
+            WHERE g.genre_id = gb.genre_id
+              AND books.book_id = gb.book_id
+        );
+           
+        UPDATE books
+        SET keywords = (
+               SELECT group_concat(kw.keyword_id || '###' || kw.name, '$$$')
+               FROM keywords kw,
+                    keyword_to_book kwb
+               WHERE kw.keyword_id = kwb.keyword_id
+                 AND books.book_id = kwb.book_id
+           );
+        
+        CREATE INDEX books_title_idx ON books(title);
+        CREATE INDEX books_title_alt_idx ON books(title_alt);
+        CREATE VIRTUAL TABLE titles_fts USING fts4(title, tokenize=unicode61);
+        INSERT INTO titles_fts SELECT title FROM books;
+        CREATE VIRTUAL TABLE titles_alt_fts USING fts4(title, tokenize=unicode61);
+        INSERT INTO titles_alt_fts SELECT title_alt FROM books;
+
+        --DROP TABLE author_to_book_temp;
+        --DROP TABLE books_temp;
+        --DROP TABLE genre_to_book_temp;
+        --DROP TABLE genres_temp;
+        --DROP TABLE series_temp;
+        --DROP TABLE authors_temp;
+        --DROP TABLE serie_to_book_temp;
+        --DROP TABLE keywords_temp;
+        --DROP TABLE keyword_to_book_temp;
+        
+        --VACUUM;
+    '''
+    # conn.executescript(sql)
+    for part in sql.split(';'):
+        print(part)
+        conn.executescript(part + ';')
     conn.commit()
     print('Done!')
 
@@ -174,7 +295,8 @@ def addBooks(
     books: List[dict],
     series: dict,
     genres: dict,
-    authors: dict
+    authors: dict,
+    keywords: dict
 ):
     def chunks(iterable, size=10):
         # http://stackoverflow.com/a/24527424
@@ -225,10 +347,10 @@ def addBooks(
     authorNum = 0
     authorTotal = len(authors)
 
-    authorsIter = ((num, name) for name, num in authors.items())
+    authorsIter = ((num, *name) for name, num in authors.items())
     for i in chunks(authorsIter, chunkSize):
         startTime = time.time()
-        conn.executemany('INSERT INTO authors_temp VALUES (?, ?)', i)
+        conn.executemany('INSERT INTO authors_temp(author_id, first_name, middle_name, last_name, nickname) VALUES (?, ?, ?, ?, ?)', i)
         conn.commit()
         endTime = time.time()
         authorNum += chunkSize
@@ -239,47 +361,42 @@ def addBooks(
         ))
     print('Done.\n')
 
+    print('Adding keywords...')
+    keywordsNum = 0
+    keywordsTotal = len(keywords)
+
+    keywordsIter = ((num, name) for name, num in keywords.items())
+    for i in chunks(keywordsIter, chunkSize):
+        startTime = time.time()
+        conn.executemany('INSERT INTO keywords_temp VALUES (?, ?)', i)
+        conn.commit()
+        endTime = time.time()
+        keywordsNum += chunkSize
+        print('\t{n}/{t} ({s}) keywords added...'.format(
+            n=keywordsNum,
+            t=keywordsTotal,
+            s=(endTime - startTime) / chunkSize
+        ))
+    print('Done.\n')
+
     print('Adding books...')
     bookNum = 0
     bookTotal = len(books)
 
-    def booksIter():
-        for i in books:
-            yield {
-                'book_id': i['lib_id'],
-                'title': i['title'],
-                'serie_id': series[i['series']]['serie_id'],
-                'serno': i['serno'] +
-                (1 if i['serno'] != -1 and series[i['series']]['zero'] else 0),
-                'size': i['size'],
-                'file': i['file'],
-                'add_date': int(time.mktime(
-                    datetime.datetime.strptime(i['date'], "%Y-%m-%d").timetuple()
-                )),
-                'lang': i['lang'],
-                'rate': i['librate'],
-                'keywords': i['keywords'],
-                'authors': i['author'],
-                'genres': i['genre'],
-                'deleted': i['del']
-            }
-    for i in chunks(booksIter(), chunkSize):
+    for i in chunks(books, chunkSize):
         startTime = time.time()
         conn.executemany('''
             INSERT INTO books_temp VALUES (
                 :book_id,
                 :title,
-                :serie_id,
-                :serno,
+                :title_alt,
                 :size,
                 :file,
                 :add_date,
                 :lang,
                 :rate,
-                :keywords,
-                :authors,
-                :genres,
-                :deleted
+                :deleted,
+                :joined_into
             )
         ''', i)
         conn.commit()
@@ -297,8 +414,8 @@ def addBooks(
 
     def authorToBookIter():
         for b in books:
-            for a in b['author'].split(':'):
-                yield (b['lib_id'], authors[a])
+            for a in b['authors']:
+                yield (b['book_id'], authors[a])
     for i in chunks(authorToBookIter(), chunkSize):
         startTime = time.time()
         conn.executemany('INSERT INTO author_to_book_temp(book_id, author_id) VALUES (?, ?)', i)
@@ -314,8 +431,8 @@ def addBooks(
 
     def genreToBookIter():
         for b in books:
-            for g in b['genre'].split(':'):
-                yield (b['lib_id'], genres[g])
+            for g in b['genres']:
+                yield (b['book_id'], genres[g])
     for i in chunks(genreToBookIter(), chunkSize):
         startTime = time.time()
         conn.executemany('INSERT INTO genre_to_book_temp(book_id, genre_id) VALUES (?, ?)', i)
@@ -324,6 +441,42 @@ def addBooks(
 
         g2bNum += chunkSize
         print('\t{n} ({s}) added...'.format(n=g2bNum, s=(endTime - startTime) / chunkSize))
+    print('Done.\n')
+
+    print('Filling serie2book')
+    s2bnum = 0
+
+    def serieToBookIter():
+        for b in books:
+            for sername, serno in b['series'].items():
+                s = series[sername]
+                if s['zero'] and serno is not None and serno != -1:
+                    serno += 1
+                yield (b['book_id'], s['serie_id'], serno)
+    for i in chunks(serieToBookIter(), chunkSize):
+        startTime = time.time()
+        conn.executemany('INSERT INTO serie_to_book_temp(book_id, serie_id, serno) VALUES (?, ?, ?)', i)
+        conn.commit()
+        endTime = time.time()
+
+        s2bnum += chunkSize
+        print('\t{n} ({s}) added...'.format(n=s2bnum, s=(endTime - startTime) / chunkSize))
+
+    print('Filling keyword2book...')
+    kw2bNum = 0
+
+    def keywordToBookIter():
+        for b in books:
+            for kw in b['keywords']:
+                yield (b['book_id'], keywords[kw])
+    for i in chunks(keywordToBookIter(), chunkSize):
+        startTime = time.time()
+        conn.executemany('INSERT INTO keyword_to_book_temp(book_id, keyword_id) VALUES (?, ?)', i)
+        conn.commit()
+        endTime = time.time()
+
+        kw2bNum += chunkSize
+        print('\t{n} ({s}) added...'.format(n=kw2bNum, s=(endTime - startTime) / chunkSize))
     print('Done.\n')
 
     print('Done all!')
@@ -336,10 +489,8 @@ def searchBooks(files):
     series = {}
     genres = {}
     authors = {}
+    keywords = {}
 
-    serNum = 0
-    genreNum = 0
-    authorNum = 0
     n = 0
 
     for impFile in files:
@@ -348,38 +499,72 @@ def searchBooks(files):
             for ln in f:
                 splitted = ln.split('\x04')
                 book = {
-                    'author': splitted[0],
-                    'genre': splitted[1],
+                    'authors': splitted[0].split(':'),
+                    'genres': splitted[1].split(':'),
                     'title': splitted[2],
-                    'series': splitted[3],
-                    'serno': int(splitted[4]) if splitted[4] and splitted[4].isnumeric() else -1,
+                    'title_alt': None,
+                    'series': {},
                     'file': impFile + '/' + splitted[5],
                     'size': int(splitted[6]),
-                    'lib_id': splitted[7],
-                    'del': splitted[8],
+                    'book_id': splitted[7],
+                    'deleted': splitted[8],
                     'ext': splitted[9],
-                    'date': splitted[10],
+                    'add_date': splitted[10],
                     'lang': splitted[11],
-                    'librate': int(splitted[12]) if splitted[12] else -1,
-                    'keywords': splitted[13]
+                    'rate': int(splitted[12]) if splitted[12] else -1,
+                    'keywords': [i.strip() for i in splitted[13].split(',')],
+                    'joined_into': None
                 }
 
-                if book['series'] not in series:
-                    series[book['series']] = {
-                        'serie_id': serNum,
-                        'zero': book['serno'] == 0
-                    }
-                    serNum += 1
-                elif book['serno'] == 0:
-                    series[book['series']]['zero'] = True
+                book['add_date'] = int(time.mktime(
+                    datetime.datetime.strptime(book['add_date'], "%Y-%m-%d").timetuple()
+                ))
 
-                for g in book['genre'].split(':'):
-                    genres[g] = genreNum
-                    genreNum += 1
+                if splitted[3] or splitted[4]:
+                    sername = splitted[3]
+                    serno = splitted[4]
+                    if serno:
+                        if serno.isnumeric():
+                            serno = int(serno)
+                        else:
+                            serno = -1
+                    else:
+                        serno = None
+                    book['series'][sername] = serno
+                    if sername not in series:
+                        series[sername] = {
+                            'serie_id': len(series),
+                            'zero': serno == 0
+                        }
+                    elif serno == 0:
+                        series[sername]['zero'] = True
 
-                for a in book['author'].split(':'):
-                    authors[a] = authorNum
-                    authorNum += 1
+                for g in book['genres']:
+                    if g not in genres:
+                        genres[g] = len(genres)
+
+                new_authors = []
+                for a in book['authors']:
+                    if not a:
+                        a = ('', '', '', '')
+                    else:
+                        splitted = a.rsplit(',', 2)
+                        if len(splitted) == 3:
+                            a = (*splitted, '')
+                        elif len(splitted) == 2:
+                            a = (*splitted, '', '')
+                        elif len(splitted) == 1:
+                            a = (*splitted, '', '', '')
+                        else:
+                            raise Exception('Unreachable')
+                    if a not in authors:
+                        authors[a] = len(authors)
+                    new_authors.append(a)
+                book['authors'] = new_authors
+
+                for kw in book['keywords']:
+                    if kw not in keywords:
+                        keywords[kw] = len(keywords)
 
                 books.append(book)
                 n += 1
@@ -392,8 +577,16 @@ def searchBooks(files):
         'books': books,
         'series': series,
         'genres': genres,
-        'authors': authors
+        'authors': authors,
+        'keywords': keywords,
     }
+
+
+def load_mysql(*args, **kwargs):
+    import pymysql
+    con = pymysql.connect(*args, **kwargs)
+    with con.cursor() as cur:
+        pass
 
 
 if __name__ == "__main__":

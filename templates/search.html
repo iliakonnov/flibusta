@@ -10,41 +10,41 @@
     <div class="container">
         <h1>Поиск</h1>
         {% include "search.tpl" %}
-        <div class="panel panel-info">
-            <div class="panel-heading">
+        <div class="card">
+            <div class="card-header">
                 Параметры поиска
             </div>
-            <div class="panel-body">
+            <div class="card-body">
                 <table class="table">
                     {% for key, value in result['parameters'].items() %} {% if value %}
                         <tr>
-                            <td class="col-md-2">{{ params_translation[key] }}</td>
+                            <td>{{ params_translation.get(key, key) }}</td>
                             <td>{{ value }}</td>
                         </tr>
                     {% endif %} {% endfor %}
                 </table>
             </div>
         </div>
-        <div class="panel panel-info">
-            <div class="panel-heading">
+        <div class="card">
+            <div class="card-header">
                 Статистика поиска
             </div>
-            <div class="panel-body">
+            <div class="card-body">
                 <table class="table">
                     <tr>
-                        <td class="col-md-2">Обработка</td>
+                        <td>Обработка</td>
                         <td>{{ result['time']['processing'] }} мс. </td>
                     </tr>
                     <tr>
-                        <td class="col-md-2">Запрос к БД</td>
+                        <td>Запрос к БД</td>
                         <td>{{ result['time']['sql'] }} мс. </td>
                     </tr>
                     <tr>
-                        <td class="col-md-2">Всего</td>
+                        <td>Всего</td>
                         <td>{{ result['time']['total'] }} мс. </td>
                     </tr>
                     <tr>
-                        <td class="col-md-2">Найдено книг</td>
+                        <td>Найдено книг</td>
                         <td>{{ result['result'] | length }}</td>
                     </tr>
                 </table>

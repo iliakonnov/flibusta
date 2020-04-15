@@ -42,8 +42,6 @@
                 {{book['fb2']['author']['lastname'] if book['fb2']['author']['lastname'] else ""}}
                 {{book['fb2']['author']['firstname'] if book['fb2']['author']['firstname'] else ""}}
                 {{book['fb2']['author']['middlename'] if book['fb2']['author']['middlename'] else ""}}
-            {% else %}
-                {{ book['db']['authors'].replace(',', ' ').replace(':', ', ').rstrip(', ') }}
             {% endif %}
         </h2>
 
@@ -59,10 +57,10 @@
 
         {# Авторы из БД #}
         <p><span class="lead">Автор(ы): </span>
-        {% for author in authors[:-1] %}
-            <a href="/author/{{author['author_id']}}">{{author['name'].replace(',', ' ').rstrip(' ')}}</a>, 
+        {% for author in authors %}
+            <a href="/search?author_id={{author['author_id']}}">{{author['name'].replace(',', ' ').rstrip(' ')}}</a>
+            {%- if not loop.last %}, {% endif %}
         {% endfor %}
-        <a href="/author/{{authors[-1]['author_id']}}">{{authors[-1]['name'].replace(',', ' ').rstrip(' ')}}</a>
         </p>
 
         {# Рейтинг #}
@@ -72,13 +70,13 @@
 
         {# Жанры #}
         <p><span class="lead">Жанры: </span>
-            {% set genres=book['db']['genres'].split(':') %}
+            {% set genres=book['db']['genres'] %}
                 {% for genre in genres[:-1] %}
                     {% if genre %}
-                        {{ genres_translation[genre] }}, 
+                        {{ genres_translation[genre] }}
+                        {%- if not loop.last %},{% endif %}
                     {% endif %}
                 {% endfor %}
-                {{ genres_translation[genres[-1]] }}
             {# {% endset %} #}
         </p>
 
@@ -89,11 +87,11 @@
 
         {# Ключевые слова #}
         {% if book['db']['keywords'] != -1 %}
-            <p><span class="lead">Ключевые слова: </span>{{ book['db']['keywords'] }}</p>
+            <p><span class="lead">Ключевые слова: </span>{{ book['db']['keywords'] | join(', ') }}</p>
         {% endif %}
 
         {# Скачать #}
-        <p><a id="download" href="#{{ title }}.fb2.zip" class="btn btn-lg btn-primary"><span class="glyphicon glyphicon-download"></span> Скачать fb2 ({{ (book['fb2']['zipSize'] | int) // 1024 }} Кб)</a></p>
+        <p><a id="download" href="#{{ title }}.fb2.zip" class="btn btn-lg btn-primary"><span class="glyphicon glyphicon-download"></span> Скачать fb2 ({{ ((book['fb2']['zipSize'] or 0) | int) // 1024 }} Кб)</a></p>
     </div>
     <script type="text/javascript">
         {# Обложка #}

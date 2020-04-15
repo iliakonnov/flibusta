@@ -8,62 +8,50 @@ from lxml import etree
 xmlns = '{http://www.gribuser.ru/xml/fictionbook/2.0}'
 
 
-def getBook(fileName, zipPath):
-    zipId, bookId = fileName.split('/')[-2:]
-    zipId = zipId.rstrip('.inp')
-    with zipfile.ZipFile(os.path.join(zipPath, zipId + '.zip'), 'r') as z:
-        if bookId + '.fb2' not in z.namelist():
-            return {
-                'ok': False,
-                'error': 'File "{f}"" not found in archive "{a}"'.format(
-                    f=bookId + '.fb2',
-                    a=os.path.join(zipPath, zipId + '.zip')
-                )
-            }
-        book = z.read(bookId + '.fb2')
-        root = etree.XML(book)
-        info = root.find("{xmlns}description/{xmlns}title-info".format(xmlns=xmlns))
+def parseXml(book):
+    root = etree.XML(book)
+    info = root.find("{xmlns}description/{xmlns}title-info".format(xmlns=xmlns))
 
-        imageElem = root.find('./{xmlns}binary'.format(xmlns=xmlns))
-        if imageElem is not None:
-            image = codecs.decode(imageElem.text.encode('utf-8'), 'base64')
-            imageMime = imageElem.get('content-type')
-        else:
-            image = None
-            imageMime = None
+    imageElem = root.find('./{xmlns}binary'.format(xmlns=xmlns))
+    if imageElem is not None:
+        image = codecs.decode(imageElem.text.encode('utf-8'), 'base64')
+        imageMime = imageElem.get('content-type')
+    else:
+        image = None
+        imageMime = None
 
-        annotationElem = info.find("./{xmlns}annotation".format(xmlns=xmlns))
-        if annotationElem is not None:
-            annotation = ''.join([
-                i for i in annotationElem.itertext()
-                if i.strip('\n').strip(' ')
-            ])
-        else:
-            annotation = None
+    annotationElem = info.find("./{xmlns}annotation".format(xmlns=xmlns))
+    if annotationElem is not None:
+        annotation = ''.join([
+            i for i in annotationElem.itertext()
+            if i.strip('\n').strip(' ')
+        ])
+    else:
+        annotation = None
 
-        langElem = info.find("./{xmlns}lang".format(xmlns=xmlns))
-        if langElem is not None:
-            lang = langElem.text
-        else:
-            lang = None
+    langElem = info.find("./{xmlns}lang".format(xmlns=xmlns))
+    if langElem is not None:
+        lang = langElem.text
+    else:
+        lang = None
 
-        author_info = info.find("./{xmlns}author".format(xmlns=xmlns))
-        lastname = author_info.find("./{xmlns}last-name".format(xmlns=xmlns))
-        middlename = author_info.find("./{xmlns}middle-name".format(xmlns=xmlns))
-        firstname = author_info.find("./{xmlns}first-name".format(xmlns=xmlns))
-        author = {
-            'firstname': firstname.text if firstname is not None else None,
-            'middlename': middlename.text if middlename is not None else None,
-            'lastname': lastname.text if lastname is not None else None
-        }
+    author_info = info.find("./{xmlns}author".format(xmlns=xmlns))
+    lastname = author_info.find("./{xmlns}last-name".format(xmlns=xmlns))
+    middlename = author_info.find("./{xmlns}middle-name".format(xmlns=xmlns))
+    firstname = author_info.find("./{xmlns}first-name".format(xmlns=xmlns))
+    author = {
+        'firstname': firstname.text if firstname is not None else None,
+        'middlename': middlename.text if middlename is not None else None,
+        'lastname': lastname.text if lastname is not None else None
+    }
 
-        ser_info = info.find("./{xmlns}sequence".format(xmlns=xmlns))
-        if ser_info is not None:
-            serie = ser_info.get('name')
-            serno = ser_info.get('number')
-        else:
-            serie = None
-            serno = None
+    ser_info = info.find("./{xmlns}sequence".format(xmlns=xmlns))
+    if ser_info is not None:
+        serie = ser_info.get('name')
+        serno = ser_info.get('number')
+    else:
+        serie = None
+        serno = None
 
     pubInfo = root.find("{xmlns}description/{xmlns}publish-info".format(xmlns=xmlns))
     if pubInfo is not None:
@@ -88,11 +76,40 @@ def getBook(fileName, zipPath):
         }
     else:
         publishInfo = None
+    return {
+        'image': image,
+        'imageMime': imageMime,
+        'annotation': annotation,
+        'lang': lang,
+        'author': author,
+        'publish_info': publishInfo,
+        'serie': serie,
+        'serno': serno,
+    }
+
+
+def getBook(fileName, zipPath):
+    zipId, bookId = fileName.split('/')[-2:]
+    zipId = zipId.rstrip('.inp')
+    with zipfile.ZipFile(os.path.join(zipPath, zipId + '.zip'), 'r') as z:
+        if bookId + '.fb2' not in z.namelist():
+            return {
+                'ok': False,
+                'error': 'File "{f}"" not found in archive "{a}"'.format(
+                    f=bookId + '.fb2',
+                    a=os.path.join(zipPath, zipId + '.zip')
+                )
+            }
+        book = z.read(bookId + '.fb2')
+        try:
+            xml = parseXml(book)
+        except Exception:
+            xml = {}
 
     fb2Name = bookId
-    if publishInfo:
-        if publishInfo['bookName']:
-            fb2Name = publishInfo['bookName']
+    if xml.get('publishInfo'):
+        if xml['publishInfo'].get('bookName'):
+            fb2Name = xml['publishInfo']['bookName']
     fb2Zip = BytesIO()
     with zipfile.ZipFile(fb2Zip, 'w', zipfile.ZIP_DEFLATED) as zipF:
         zipF.writestr(zipfile.ZipInfo(filename=fb2Name + '.fb2'), book, zipfile.ZIP_DEFLATED)
@@ -105,15 +122,7 @@ def getBook(fileName, zipPath):
             'bookId': bookId,
             'book': fb2ZipData,
             'zipSize': len(fb2ZipData),
-            'image': image,
-            'imageMime': imageMime,
-            'annotation': annotation,
-            'lang': lang,
-            'author': author,
-            'publish_info': publishInfo,
-            'serie': serie,
-            'serno': serno,
-            'author': author
+            **xml
         }
     }
 
